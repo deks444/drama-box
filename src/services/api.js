@@ -1,4 +1,3 @@
-const API_BASE_URL = '/api';
 
 export const fetchLatestDramas = async (page = 1, size = 10) => {
     try {
@@ -112,11 +111,18 @@ export const fetchCategoryDramas = async (id, page = 1, size = 10) => {
     }
 };
 
-const LOCAL_API_URL = 'http://localhost:8000/api';
+// 1. URL untuk Data Film (External Drama API via Vercel Proxy)
+const API_BASE_URL = '/api';
+
+// 2. URL untuk Backend Laravel Anda (Auth & Pembayaran)
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const MY_BACKEND_URL = isLocal
+    ? 'http://localhost:8000/api'
+    : 'https://backend-anda-sendiri.railway.app/api';
 
 export const login = async (email, password) => {
     try {
-        const response = await fetch(`${LOCAL_API_URL}/login`, {
+        const response = await fetch(`${MY_BACKEND_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -131,7 +137,7 @@ export const login = async (email, password) => {
 
 export const register = async (name, email, password) => {
     try {
-        const response = await fetch(`${LOCAL_API_URL}/register`, {
+        const response = await fetch(`${MY_BACKEND_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
@@ -146,7 +152,7 @@ export const register = async (name, email, password) => {
 export const deleteSubscription = async (id) => {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${LOCAL_API_URL}/subscriptions/${id}`, {
+        const response = await fetch(`${MY_BACKEND_URL}/subscriptions/${id}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -163,7 +169,7 @@ export const deleteSubscription = async (id) => {
 export const checkTransactionStatus = async (orderId) => {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${LOCAL_API_URL}/subscriptions/check/${orderId}`, {
+        const response = await fetch(`${MY_BACKEND_URL}/subscriptions/check/${orderId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -179,7 +185,7 @@ export const checkTransactionStatus = async (orderId) => {
 export const fetchSubscriptions = async () => {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${LOCAL_API_URL}/subscriptions`, {
+        const response = await fetch(`${MY_BACKEND_URL}/subscriptions`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -195,7 +201,7 @@ export const fetchSubscriptions = async () => {
 export const checkout = async (planId, duration, amount) => {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${LOCAL_API_URL}/checkout`, {
+        const response = await fetch(`${MY_BACKEND_URL}/checkout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
