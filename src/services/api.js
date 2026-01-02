@@ -118,7 +118,7 @@ const API_BASE_URL = '/api';
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const MY_BACKEND_URL = isLocal
     ? 'http://localhost:8000/api'
-    : 'https://backend-anda-sendiri.railway.app/api';
+    : 'https://be-drama-box-production.up.railway.app/api';
 
 export const login = async (email, password) => {
     try {
