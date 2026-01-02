@@ -16,7 +16,7 @@ const Membership = ({ onSelectPlan }) => {
         },
         {
             id: '3days',
-            name: 'Hemat 3 Hari',
+            name: '3 Hari',
             price: '3.000',
             priceNumeric: 3000,
             duration: '3 Hari',
@@ -27,7 +27,7 @@ const Membership = ({ onSelectPlan }) => {
         },
         {
             id: 'weekly',
-            name: 'Mingguan',
+            name: 'Hemat 1 Minggu',
             price: '5.000',
             priceNumeric: 5000,
             duration: '1 Minggu',
@@ -39,7 +39,7 @@ const Membership = ({ onSelectPlan }) => {
         },
         {
             id: 'monthly',
-            name: 'Bulanan VIP',
+            name: 'Hemat 1 Bulan',
             price: '15.000',
             priceNumeric: 15000,
             duration: '1 Bulan',

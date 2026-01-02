@@ -8,7 +8,7 @@ import Membership from './components/Membership';
 import Auth from './components/Auth';
 import Checkout from './components/Checkout';
 import TransactionHistory from './components/TransactionHistory';
-import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown, Crown, LogIn, User as UserIcon, LogOut, Clock } from 'lucide-react';
+import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown, Crown, LogIn, User as UserIcon, LogOut, Clock, MessageCircle } from 'lucide-react';
 
 function App() {
   const [dramas, setDramas] = useState([]);
@@ -642,6 +642,22 @@ function App() {
       <footer className="border-t border-white/5 py-6 text-center text-slate-500 mt-auto">
         <p>&copy; 2026 DramaBox. All rights reserved.</p>
       </footer>
+
+      {/* WhatsApp Floating Button */}
+      <a
+        href="https://wa.me/6285179691321?text=Halo%20Admin,%20saya%20ingin%20bertanya..."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-[120] group flex items-center gap-3"
+      >
+        <div className="bg-slate-900/90 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl text-white text-sm font-bold shadow-2xl opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-none">
+          Hubungi Admin
+        </div>
+        <div className="w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all duration-300">
+          <MessageCircle size={32} className="text-white fill-white/20" />
+          <div className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-20"></div>
+        </div>
+      </a>
     </div>
   );
 }
