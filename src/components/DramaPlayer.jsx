@@ -86,15 +86,27 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
                         </button>
                     </div>
                 ) : loading ? (
-                    <div className="w-full h-full flex items-center justify-center text-slate-500 animate-pulse">
+                    <div className="w-full h-full flex items-center justify-center text-slate-500 animate-pulse bg-slate-100/5">
                         <div className="flex flex-col items-center gap-4">
                             <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                             Loading stream...
                         </div>
                     </div>
                 ) : error ? (
-                    <div className="w-full h-full flex items-center justify-center text-red-400">
-                        {error}
+                    <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-slate-900 animate-fade-in">
+                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-[0_0_30px_-10px_rgba(239,68,68,0.5)]">
+                            <Clock className="text-red-400" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold mb-2 text-white font-sans">Kesalahan pada server</h3>
+                        <p className="text-slate-400 text-sm max-w-xs mb-6 font-sans">
+                            Mohon hubungi admin. Gagal memuat video saat ini.
+                        </p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="bg-white text-slate-900 px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
+                        >
+                            Coba Lagi
+                        </button>
                     </div>
                 ) : (
                     <video

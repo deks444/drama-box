@@ -130,11 +130,30 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
 
     if (error || !detail) {
         return (
-            <div className="text-center py-20 text-red-400">
-                <p>{error || "Drama not found"}</p>
-                <button onClick={onBack} className="mt-4 px-6 py-2 bg-slate-800 rounded-lg hover:bg-slate-700">
-                    Go Back
-                </button>
+            <div className="text-center py-16 px-6 max-w-2xl mx-auto flex flex-col items-center animate-fade-in mt-20">
+                <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 border border-indigo-500/20 shadow-[0_0_50px_-12px_rgba(99,102,241,0.5)]">
+                    <Clock className="text-indigo-400" size={40} />
+                </div>
+                <h2 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-500 leading-tight text-center">
+                    Kesalahan pada server,<br />mohon hubungi admin
+                </h2>
+                <p className="text-slate-400 text-base mb-8 leading-relaxed max-w-md">
+                    {error || "Maaf, detail drama tidak dapat ditemukan saat ini."}
+                </p>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2.5 bg-white text-slate-900 hover:bg-slate-200 rounded-xl font-bold transition-all shadow-xl active:scale-95 text-sm"
+                    >
+                        Coba Lagi
+                    </button>
+                    <button
+                        onClick={onBack}
+                        className="px-6 py-2.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl font-bold transition-all border border-white/5 active:scale-95 text-sm"
+                    >
+                        Go Back
+                    </button>
+                </div>
             </div>
         );
     }
@@ -267,6 +286,29 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                                             className="w-full h-full object-cover group-hover:brightness-110 transition-all"
                                             loading="lazy"
                                         />
+                                    ) : loading ? (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-500 animate-pulse bg-slate-800/20">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                                Loading stream...
+                                            </div>
+                                        </div>
+                                    ) : error ? (
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-slate-900 animate-fade-in">
+                                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-[0_0_30px_-10px_rgba(239,68,68,0.5)]">
+                                                <Clock className="text-red-400" size={32} />
+                                            </div>
+                                            <h3 className="text-xl font-bold mb-2 text-white">Kesalahan pada server</h3>
+                                            <p className="text-slate-400 text-sm max-w-xs mb-6">
+                                                Mohon hubungi admin. Gagal memuat video saat ini.
+                                            </p>
+                                            <button
+                                                onClick={() => window.location.reload()}
+                                                className="bg-white text-slate-900 px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
+                                            >
+                                                Coba Lagi
+                                            </button>
+                                        </div>
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center">
                                             <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-slate-900"></div>

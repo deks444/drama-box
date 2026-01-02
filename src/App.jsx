@@ -431,34 +431,53 @@ function App() {
               />
             ) : (
               <>
-                <div className="text-center mb-12 pt-8">
-                  <h2 className="text-4xl font-bold mb-4">
-                    {activeSearch ? `Search Results for "${activeSearch}"` : selectedCategory ? `Kategori: ${selectedCategory.name}` : 'Latest Dramas'}
-                  </h2>
-                  <p className="text-slate-400 text-lg">
-                    {activeSearch ? `Found dramas matching your search` : selectedCategory ? `Dramas in ${selectedCategory.name} collection` : 'Discover the newest trending stories'}
-                  </p>
-                </div>
-
-                {loading && <div className="text-center py-20 text-xl text-slate-400">Loading amazing content...</div>}
-
-                {error && (
-                  <div className="text-center py-20">
-                    <p className="text-xl mb-4">Oops! Something went wrong.</p>
-                    <p className="text-red-400 mb-6">{error}</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition-colors"
-                    >
-                      Retry
-                    </button>
+                {!loading && error ? (
+                  <div className="text-center py-6 px-6 max-w-2xl mx-auto flex flex-col items-center animate-fade-in mt-12">
+                    <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 border border-indigo-500/20 shadow-[0_0_50px_-12px_rgba(99,102,241,0.5)]">
+                      <Clock className="text-indigo-400" size={40} />
+                    </div>
+                    <h2 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-500 leading-tight">
+                      Kesalahan pada server,<br />mohon hubungi admin
+                    </h2>
+                    <p className="text-slate-400 text-base mb-8 leading-relaxed max-w-md">
+                      Kami mendeteksi gangguan teknis. Tim kami sedang berusaha memperbaikinya secepat mungkin.
+                    </p>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2.5 bg-white text-slate-900 hover:bg-slate-200 rounded-xl font-bold transition-all shadow-xl active:scale-95 text-sm"
+                      >
+                        Refresh Page
+                      </button>
+                      <button
+                        onClick={resetHome}
+                        className="px-6 py-2.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl font-bold transition-all border border-white/5 active:scale-95 text-sm"
+                      >
+                        Kembali Ke Home
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {!loading && (
+                      <div className="text-center mb-12 pt-8">
+                        <h2 className="text-4xl font-bold mb-4">
+                          {activeSearch ? `Search Results for "${activeSearch}"` : selectedCategory ? `Kategori: ${selectedCategory.name}` : 'Latest Dramas'}
+                        </h2>
+                        <p className="text-slate-400 text-lg">
+                          {activeSearch ? `Found dramas matching your search` : selectedCategory ? `Dramas in ${selectedCategory.name} collection` : 'Discover the newest trending stories'}
+                        </p>
+                      </div>
+                    )}
+
+                    {loading && <div className="text-center py-20 text-xl text-slate-400">Loading amazing content...</div>}
+
+                    {!loading && <DramaList dramas={dramas} onDramaClick={handleDramaClick} isLoggedIn={!!user} />}
+                  </>
                 )}
 
                 {!loading && !error && (
                   <>
-                    <DramaList dramas={dramas} onDramaClick={handleDramaClick} isLoggedIn={!!user} />
-
                     {/* Pagination */}
                     <div className="mt-24 flex justify-center items-center gap-3 flex-wrap">
                       <button
