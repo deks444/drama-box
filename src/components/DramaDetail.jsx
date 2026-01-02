@@ -134,11 +134,11 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                 <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 border border-indigo-500/20 shadow-[0_0_50px_-12px_rgba(99,102,241,0.5)]">
                     <Clock className="text-indigo-400" size={40} />
                 </div>
-                <h2 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-500 leading-tight text-center">
+                <h2 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-500 leading-tight">
                     Kesalahan pada server,<br />mohon hubungi admin
                 </h2>
-                <p className="text-slate-400 text-base mb-8 leading-relaxed max-w-md">
-                    {error || "Maaf, detail drama tidak dapat ditemukan saat ini."}
+                <p className="text-slate-400 text-base mb-8 leading-relaxed">
+                    {error || "Maaf, detail drama tidak dapat ditemukan atau terjadi gangguan koneksi."}
                 </p>
                 <div className="flex gap-4">
                     <button
@@ -151,7 +151,7 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                         onClick={onBack}
                         className="px-6 py-2.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl font-bold transition-all border border-white/5 active:scale-95 text-sm"
                     >
-                        Go Back
+                        Kembali
                     </button>
                 </div>
             </div>

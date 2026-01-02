@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Play, Film, Lock as LockIcon, Crown } from 'lucide-react';
+import { ArrowLeft, Play, Film, Lock as LockIcon, Crown, Clock } from 'lucide-react';
 import { fetchDramaStream } from '../services/api';
 
 const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, onBack, user, onUpgrade }) => {
@@ -51,6 +51,37 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    if (error) {
+        return (
+            <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
+                <div className="fixed top-0 left-0 right-0 p-4 flex items-center gap-4 bg-slate-900/90 backdrop-blur z-50 border-b border-white/10">
+                    <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h2 className="text-lg font-bold">Error</h2>
+                </div>
+
+                <div className="max-w-md animate-fade-in mt-12">
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-[0_0_50px_-12px_rgba(239,68,68,0.5)] mx-auto">
+                        <Clock className="text-red-400" size={40} />
+                    </div>
+                    <h2 className="text-3xl font-extrabold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-500 leading-tight">
+                        Kesalahan pada server,<br />mohon hubungi admin
+                    </h2>
+                    <p className="text-slate-400 text-base mb-8 leading-relaxed">
+                        Gagal memuat video untuk drama ini. Silakan coba kembali nanti atau hubungi bantuan.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-8 py-3 bg-white text-slate-900 hover:bg-slate-200 rounded-xl font-bold transition-all shadow-xl active:scale-95 flex items-center gap-2 mx-auto"
+                    >
+                        Refresh Page
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-900 text-white flex flex-col">
             {/* Header */}
@@ -92,22 +123,6 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
                             Loading stream...
                         </div>
                     </div>
-                ) : error ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-slate-900 animate-fade-in">
-                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-[0_0_30px_-10px_rgba(239,68,68,0.5)]">
-                            <Clock className="text-red-400" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold mb-2 text-white font-sans">Kesalahan pada server</h3>
-                        <p className="text-slate-400 text-sm max-w-xs mb-6 font-sans">
-                            Mohon hubungi admin. Gagal memuat video saat ini.
-                        </p>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="bg-white text-slate-900 px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
-                        >
-                            Coba Lagi
-                        </button>
-                    </div>
                 ) : (
                     <video
                         ref={videoRef}
@@ -116,6 +131,7 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
                         className="w-full h-full object-contain"
                         src={streamData?.chapter?.video?.mp4}
                         poster={streamData?.chapter?.cover}
+                        onError={(e) => setError('Gagal memuat file video. Mohon hubungi admin.')}
                         onEnded={() => {
                             const nextEp = currentEpisode + 1;
                             if (nextEp <= totalEpisodes && !isEpisodeLocked(nextEp)) {
