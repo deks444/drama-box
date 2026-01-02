@@ -2,7 +2,7 @@ import React from 'react';
 import DramaCard from './DramaCard';
 import './DramaList.css';
 
-const DramaList = ({ dramas, onDramaClick }) => {
+const DramaList = ({ dramas, onDramaClick, isLoggedIn }) => {
     if (!dramas || dramas.length === 0) {
         return <div className="no-data">No dramas found.</div>;
     }
@@ -15,6 +15,7 @@ const DramaList = ({ dramas, onDramaClick }) => {
                     key={drama.id || drama._id || index}
                     drama={drama}
                     onClick={() => onDramaClick(drama)}
+                    isLoggedIn={isLoggedIn}
                 />
             ))}
         </div>

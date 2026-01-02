@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { fetchLatestDramas, searchDramas, fetchRecommendations, fetchCategories } from './services/api';
+import { fetchLatestDramas, searchDramas, fetchRecommendations, fetchCategories, fetchCategoryDramas } from './services/api';
 import DramaList from './components/DramaList';
 import DramaDetail from './components/DramaDetail';
 import DramaPlayer from './components/DramaPlayer';
 import Rekomendasi from './components/Rekomendasi';
-import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import Membership from './components/Membership';
+import Auth from './components/Auth';
+import Checkout from './components/Checkout';
+import TransactionHistory from './components/TransactionHistory';
+import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown, Crown, LogIn, User as UserIcon, LogOut, Clock } from 'lucide-react';
 
 function App() {
   const [dramas, setDramas] = useState([]);
@@ -18,9 +22,14 @@ function App() {
   const [watchingEpisode, setWatchingEpisode] = useState(null);
   const [currentView, setCurrentView] = useState('home');
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategories, setShowCategories] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
-  const loadDramas = async (currentPage, query) => {
+  const loadDramas = async (currentPage, query, categoryId) => {
     try {
       setLoading(true);
       setError(null);
@@ -28,19 +37,27 @@ function App() {
 
       if (query) {
         data = await searchDramas(query, currentPage);
+      } else if (categoryId) {
+        data = await fetchCategoryDramas(categoryId, currentPage);
       } else {
         data = await fetchLatestDramas(currentPage, 10);
       }
 
       // Handle various potential API response structures
-      if (data && data.data && Array.isArray(data.data.book)) {
-        setDramas(data.data.book);
-        setHasMore(data.data.isMore);
+      if (data && data.data) {
+        if (Array.isArray(data.data.book)) {
+          setDramas(data.data.book);
+          setHasMore(data.data.isMore);
+        } else if (Array.isArray(data.data.bookList)) {
+          setDramas(data.data.bookList);
+          // For categories, pages and currentPage are provided
+          setHasMore(data.data.currentPage < data.data.pages);
+        } else if (Array.isArray(data.data)) {
+          setDramas(data.data);
+        }
       } else if (Array.isArray(data)) {
         setDramas(data);
         setHasMore(data.length === 10);
-      } else if (data && Array.isArray(data.data)) {
-        setDramas(data.data);
       } else if (data && Array.isArray(data.results)) {
         setDramas(data.results);
       } else if (data && Array.isArray(data.posts)) {
@@ -59,9 +76,9 @@ function App() {
 
   useEffect(() => {
     if (!selectedDrama) {
-      loadDramas(page, activeSearch);
+      loadDramas(page, activeSearch, selectedCategory?.id);
     }
-  }, [page, activeSearch, selectedDrama]);
+  }, [page, activeSearch, selectedDrama, selectedCategory]);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -74,6 +91,13 @@ function App() {
         console.error("Failed to load categories", err);
       }
     };
+
+    // Load user session
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+
     loadCategories();
   }, []);
 
@@ -82,6 +106,7 @@ function App() {
     setActiveSearch(searchQuery);
     setSelectedDrama(null);
     setWatchingEpisode(null);
+    setSelectedCategory(null);
   };
 
   const handleKeyDown = (e) => {
@@ -132,19 +157,99 @@ function App() {
     setPage(1);
     setSelectedDrama(null);
     setWatchingEpisode(null);
+    setSelectedCategory(null);
     setCurrentView('home');
+  };
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setPage(1);
+    setSearchQuery('');
+    setActiveSearch('');
+    setSelectedDrama(null);
+    setWatchingEpisode(null);
+    setCurrentView('home');
+    setShowCategories(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleViewRekomendasi = () => {
     setCurrentView('rekomendasi');
     setSelectedDrama(null);
     setWatchingEpisode(null);
+    setSelectedCategory(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleViewHistory = () => {
+    setCurrentView('history');
+    setSelectedDrama(null);
+    setWatchingEpisode(null);
+    setSelectedCategory(null);
+    setShowUserMenu(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleViewMembership = () => {
+    setCurrentView('membership');
+    setSelectedDrama(null);
+    setWatchingEpisode(null);
+    setSelectedCategory(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setCurrentView('home');
+  };
+
+  const toggleAuthMode = () => {
+    setAuthMode(authMode === 'login' ? 'register' : 'login');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setShowUserMenu(false);
+    setWatchingEpisode(null);
+    setSelectedDrama(null);
+    setCurrentView('home');
+  };
+
+  const handleViewAuth = () => {
+    setCurrentView('auth');
+    setSelectedDrama(null);
+    setWatchingEpisode(null);
+  };
+
+  const handleSelectPlan = (plan) => {
+    if (!user) {
+      handleViewAuth();
+      return;
+    }
+    setSelectedPlan(plan);
+    setCurrentView('checkout');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePaymentSuccess = (plan) => {
+    // In a real app, we would verify with the backend
+    // For now, let's update the local user state
+    const updatedUser = { ...user, is_subscribed: true };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
+  const handleCloseCheckout = () => {
+    setCurrentView('membership');
+    setSelectedPlan(null);
   };
 
   return (
     <div className="app bg-bg-primary min-h-screen text-text-primary font-sans flex flex-col">
-      <nav className="sticky top-4 z-50 mx-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-lg">
+      <nav className="sticky top-4 z-[100] mx-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-lg">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={resetHome}>
             <Film className="text-indigo-500" size={32} />
@@ -168,6 +273,15 @@ function App() {
             >
               Rekomendasi
             </a>
+            {(!user || !user.is_subscribed) && (
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); handleViewMembership(); }}
+                className={`flex items-center gap-1.5 transition-colors ${currentView === 'membership' ? 'text-indigo-400' : 'hover:text-amber-400'}`}
+              >
+                <Crown size={16} /> Membership
+              </a>
+            )}
 
             <div className="relative group">
               <button
@@ -187,7 +301,8 @@ function App() {
                     {categories.map((cat) => (
                       <button
                         key={cat.id}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm text-slate-300 hover:text-white transition-colors"
+                        onClick={() => handleCategorySelect(cat)}
+                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm transition-colors ${selectedCategory?.id === cat.id ? 'text-indigo-400 bg-white/5' : 'text-slate-300 hover:text-white'}`}
                       >
                         {cat.name}
                       </button>
@@ -206,7 +321,7 @@ function App() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search dramas..."
-                className="bg-slate-800/50 border border-slate-700 text-sm rounded-full py-2 pl-4 pr-10 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-64 transition-all text-white"
+                className="bg-slate-800/50 border border-slate-700 text-sm rounded-full py-2 pl-4 pr-10 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-48 lg:w-64 transition-all text-white"
               />
               <button
                 onClick={handleSearch}
@@ -215,6 +330,51 @@ function App() {
                 <Search size={18} />
               </button>
             </div>
+
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 p-1.5 pr-3 rounded-full transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold">
+                    {user.name.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium hidden lg:block">{user.name}</span>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-2 z-[110] animate-fade-in">
+                    <div className="px-3 py-2 border-b border-white/5 mb-2">
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                      <p className={`text-[10px] font-bold mt-1 ${user.is_subscribed ? 'text-amber-500' : 'text-slate-400'}`}>
+                        {user.is_subscribed ? 'PREMIUM MEMBER' : 'FREE ACCOUNT'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleViewHistory}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      <Clock size={16} /> Riwayat Transaksi
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      <LogOut size={16} /> Keluar
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleViewAuth}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-sm font-bold transition-all"
+              >
+                <LogIn size={18} /> <span className="hidden sm:inline">Masuk</span>
+              </button>
+            )}
+
             <button className="md:hidden p-2 text-slate-300 hover:bg-white/10 rounded-full">
               <Menu size={24} />
             </button>
@@ -230,22 +390,54 @@ function App() {
             initialEpisode={watchingEpisode.episode}
             initialTotalEpisodes={watchingEpisode.totalEpisodes}
             onBack={handleClosePlayer}
+            user={user}
+            onUpgrade={handleViewMembership}
           />
         ) : selectedDrama ? (
           <DramaDetail
             dramaId={selectedDrama.id || selectedDrama.bookId}
             onBack={handleBackToHome}
             onWatch={handleWatch}
+            user={user}
+            onLogin={handleViewAuth}
+            onMembership={handleViewMembership}
           />
         ) : (
           <>
             {currentView === 'rekomendasi' ? (
-              <Rekomendasi onDramaClick={handleDramaClick} />
+              <Rekomendasi onDramaClick={handleDramaClick} isLoggedIn={!!user} />
+            ) : currentView === 'membership' ? (
+              <Membership onSelectPlan={handleSelectPlan} />
+            ) : currentView === 'checkout' ? (
+              <Checkout
+                plan={selectedPlan}
+                user={user}
+                onBack={handleCloseCheckout}
+                onPaymentSuccess={handlePaymentSuccess}
+              />
+            ) : currentView === 'history' ? (
+              <TransactionHistory
+                user={user}
+                onStatusUpdate={(updatedUser) => {
+                  setUser(updatedUser);
+                  localStorage.setItem('user', JSON.stringify(updatedUser));
+                }}
+              />
+            ) : currentView === 'auth' ? (
+              <Auth
+                mode={authMode}
+                onLoginSuccess={handleLoginSuccess}
+                onToggleMode={toggleAuthMode}
+              />
             ) : (
               <>
                 <div className="text-center mb-12 pt-8">
-                  <h2 className="text-4xl font-bold mb-4">Latest Dramas</h2>
-                  <p className="text-slate-400 text-lg">Discover the newest trending stories</p>
+                  <h2 className="text-4xl font-bold mb-4">
+                    {activeSearch ? `Search Results for "${activeSearch}"` : selectedCategory ? `Kategori: ${selectedCategory.name}` : 'Latest Dramas'}
+                  </h2>
+                  <p className="text-slate-400 text-lg">
+                    {activeSearch ? `Found dramas matching your search` : selectedCategory ? `Dramas in ${selectedCategory.name} collection` : 'Discover the newest trending stories'}
+                  </p>
                 </div>
 
                 {loading && <div className="text-center py-20 text-xl text-slate-400">Loading amazing content...</div>}
@@ -265,7 +457,7 @@ function App() {
 
                 {!loading && !error && (
                   <>
-                    <DramaList dramas={dramas} onDramaClick={handleDramaClick} />
+                    <DramaList dramas={dramas} onDramaClick={handleDramaClick} isLoggedIn={!!user} />
 
                     {/* Pagination */}
                     <div className="mt-24 flex justify-center items-center gap-3 flex-wrap">

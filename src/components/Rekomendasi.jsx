@@ -3,7 +3,7 @@ import { fetchRecommendations } from '../services/api';
 import DramaCard from './DramaCard';
 import { Sparkles } from 'lucide-react';
 
-const Rekomendasi = ({ onDramaClick }) => {
+const Rekomendasi = ({ onDramaClick, isLoggedIn }) => {
     const [dramas, setDramas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -74,6 +74,7 @@ const Rekomendasi = ({ onDramaClick }) => {
                 {dramas.map((drama) => (
                     <DramaCard
                         key={drama.bookId}
+                        isLoggedIn={isLoggedIn}
                         drama={{
                             id: drama.bookId,
                             bookId: drama.bookId,

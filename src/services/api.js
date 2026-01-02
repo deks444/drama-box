@@ -97,3 +97,120 @@ export const fetchCategories = async () => {
         throw error;
     }
 };
+
+export const fetchCategoryDramas = async (id, page = 1, size = 10) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/category/${id}?page=${page}&size=${size}`);
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch category dramas:", error);
+        throw error;
+    }
+};
+
+const LOCAL_API_URL = 'http://localhost:8000/api';
+
+export const login = async (email, password) => {
+    try {
+        const response = await fetch(`${LOCAL_API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Login failed:", error);
+        throw error;
+    }
+};
+
+export const register = async (name, email, password) => {
+    try {
+        const response = await fetch(`${LOCAL_API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Registration failed:", error);
+        throw error;
+    }
+};
+export const deleteSubscription = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${LOCAL_API_URL}/subscriptions/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to delete subscription:", error);
+        throw error;
+    }
+};
+
+export const checkTransactionStatus = async (orderId) => {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${LOCAL_API_URL}/subscriptions/check/${orderId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to check status:", error);
+        throw error;
+    }
+};
+
+export const fetchSubscriptions = async () => {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${LOCAL_API_URL}/subscriptions`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch subscriptions:", error);
+        throw error;
+    }
+};
+
+export const checkout = async (planId, duration, amount) => {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${LOCAL_API_URL}/checkout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                plan_id: planId,
+                duration: duration,
+                amount: amount
+            })
+        });
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Checkout failed:", error);
+        throw error;
+    }
+};
