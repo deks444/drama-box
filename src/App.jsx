@@ -8,7 +8,7 @@ import Membership from './components/Membership';
 import Auth from './components/Auth';
 import Checkout from './components/Checkout';
 import TransactionHistory from './components/TransactionHistory';
-import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown, Crown, LogIn, User as UserIcon, LogOut, Clock, MessageCircle } from 'lucide-react';
+import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown, Crown, LogIn, User as UserIcon, LogOut, Clock, MessageCircle, UserPlus } from 'lucide-react';
 
 function App() {
   const [dramas, setDramas] = useState([]);
@@ -219,7 +219,8 @@ function App() {
     setCurrentView('home');
   };
 
-  const handleViewAuth = () => {
+  const handleViewAuth = (mode = 'login') => {
+    setAuthMode(mode);
     setCurrentView('auth');
     setSelectedDrama(null);
     setWatchingEpisode(null);
@@ -368,12 +369,20 @@ function App() {
                 )}
               </div>
             ) : (
-              <button
-                onClick={handleViewAuth}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-sm font-bold transition-all"
-              >
-                <LogIn size={18} /> <span className="hidden sm:inline">Masuk</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleViewAuth('login')}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-slate-300 hover:text-white hover:bg-white/5 text-sm font-bold transition-all"
+                >
+                  <LogIn size={18} /> Masuk
+                </button>
+                <button
+                  onClick={() => handleViewAuth('register')}
+                  className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-all shadow-lg shadow-indigo-600/20"
+                >
+                  <UserPlus size={18} /> Daftar
+                </button>
+              </div>
             )}
 
             <button
