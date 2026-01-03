@@ -100,6 +100,26 @@ function App() {
     }
 
     loadCategories();
+
+    // Load Midtrans Snap Script
+    const loadMidtransScript = () => {
+      const isProduction = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true';
+      const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
+      const scriptUrl = isProduction
+        ? "https://app.midtrans.com/snap/snap.js"
+        : "https://app.sandbox.midtrans.com/snap/snap.js";
+
+      // Check if already exists
+      if (document.querySelector(`script[src="${scriptUrl}"]`)) return;
+
+      const script = document.createElement("script");
+      script.src = scriptUrl;
+      script.setAttribute("data-client-key", clientKey);
+      script.async = true;
+      document.head.appendChild(script);
+    };
+
+    loadMidtransScript();
   }, []);
 
   const handleSearch = () => {

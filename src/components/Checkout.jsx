@@ -13,6 +13,11 @@ const Checkout = ({ plan, user, onBack, onPaymentSuccess }) => {
             const response = await checkout(plan.id, plan.duration, plan.priceNumeric);
 
             if (response.success && response.snap_token) {
+                if (!window.snap) {
+                    alert("Sedang menghubungkan ke Midtrans, silakan tunggu sebentar dan coba lagi.");
+                    setIsLoading(false);
+                    return;
+                }
                 window.snap.pay(response.snap_token, {
                     onSuccess: function (result) {
                         setStep('success');
