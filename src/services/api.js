@@ -15,6 +15,7 @@ const handleResponse = async (response) => {
         console.warn("Session expired or logged in from another device.");
 
         // Cek jika reload belum dilakukan untuk menghindari loop (meskipun localStorage sudah dihapus)
+        alert("Sesi Anda telah berakhir karena Anda login di perangkat lain.");
         window.location.reload();
 
         throw new Error('Sesi berakhir. Akun Anda mungkin digunakan di perangkat lain.');
