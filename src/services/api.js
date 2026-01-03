@@ -69,6 +69,20 @@ export const fetchDramaStream = async (bookId, episode) => {
     }
 };
 
+export const fetchDramaDownloadChapters = async (bookId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/download/${bookId}`);
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch drama download chapters:", error);
+        throw error;
+    }
+};
+
 export const fetchRecommendations = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/recommend`);

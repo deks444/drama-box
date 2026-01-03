@@ -548,7 +548,7 @@ function App() {
                       </div>
                     )}
 
-                    {loading && <div className="text-center py-20 text-xl text-slate-400">Loading amazing content...</div>}
+                    {loading && <div className="text-center py-20 text-xl text-slate-400">Mohon menunggu...</div>}
 
                     {!loading && <DramaList dramas={dramas} onDramaClick={handleDramaClick} isLoggedIn={!!user} />}
                   </>

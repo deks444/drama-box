@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Play, Film, Lock as LockIcon, Crown, Clock } from 'lucide-react';
-import { fetchDramaStream } from '../services/api';
+import { fetchDramaStream, fetchDramaDownloadChapters } from '../services/api';
 
 const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, onBack, user, onUpgrade }) => {
     const [currentEpisode, setCurrentEpisode] = useState(initialEpisode);
@@ -8,6 +8,8 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [totalEpisodes, setTotalEpisodes] = useState(initialTotalEpisodes);
+    const [fallbackData, setFallbackData] = useState(null);
+    const [isUsingFallback, setIsUsingFallback] = useState(false);
     const videoRef = useRef(null);
 
     const isSubscribed = user?.is_subscribed;
@@ -24,21 +26,67 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
             setLoading(true);
             setError(null);
             try {
+                // Try primary stream endpoint first
                 const res = await fetchDramaStream(dramaId, currentEpisode);
-                if (res.status === 'success') {
+                if (res.status === 'success' && res.data && res.data.chapter && res.data.chapter.video) {
                     setStreamData(res.data);
+                    setIsUsingFallback(false);
                     if (res.data.allEps) {
                         setTotalEpisodes(res.data.allEps);
                     }
                 } else {
-                    setError('Failed to load stream');
+                    // If primary fails, try fallback
+                    console.log("Primary stream failed, attempting fallback...");
+                    await loadFallbackStream();
                 }
             } catch (err) {
-                setError(err.message);
+                console.error("Stream error, attempting fallback:", err);
+                await loadFallbackStream();
             } finally {
                 setLoading(false);
             }
         };
+
+        const loadFallbackStream = async () => {
+            try {
+                let data = fallbackData;
+                if (!data) {
+                    const res = await fetchDramaDownloadChapters(dramaId);
+                    if (res.status === 'success' && res.data) {
+                        data = res.data;
+                        setFallbackData(data);
+                        if (res.total) {
+                            setTotalEpisodes(res.total);
+                        }
+                    }
+                }
+
+                if (data) {
+                    // Find the chapter for current episode
+                    // Note: episodes are 1-based in UI, but chapterIndex is 0-based in fallback data
+                    const chapter = data.find(c => c.chapterIndex === currentEpisode - 1);
+                    if (chapter) {
+                        setStreamData({
+                            chapter: {
+                                video: {
+                                    mp4: chapter.videoPath
+                                },
+                                chapterName: chapter.chapterName,
+                                cover: null // Fallback might not have cover
+                            }
+                        });
+                        setIsUsingFallback(true);
+                    } else {
+                        setError('Episode tidak ditemukan pada sumber alternatif.');
+                    }
+                } else {
+                    setError('Gagal memuat video dari semua sumber.');
+                }
+            } catch (err) {
+                setError('Kesalahan sistem saat memuat video alternatif: ' + err.message);
+            }
+        };
+
         loadStream();
     }, [dramaId, currentEpisode, isSubscribed]);
 
@@ -124,23 +172,67 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
                         </div>
                     </div>
                 ) : (
-                    <video
-                        ref={videoRef}
-                        controls
-                        autoPlay
-                        className="w-full h-full object-contain"
-                        src={streamData?.chapter?.video?.mp4}
-                        poster={streamData?.chapter?.cover}
-                        onError={(e) => setError('Gagal memuat file video. Mohon hubungi admin.')}
-                        onEnded={() => {
-                            const nextEp = currentEpisode + 1;
-                            if (nextEp <= totalEpisodes && !isEpisodeLocked(nextEp)) {
-                                handleEpisodeClick(nextEp);
-                            }
-                        }}
-                    >
-                        Your browser does not support the video tag.
-                    </video>
+                    <div className="relative w-full h-full">
+                        <video
+                            ref={videoRef}
+                            controls
+                            autoPlay
+                            className="w-full h-full object-contain"
+                            src={streamData?.chapter?.video?.mp4}
+                            poster={streamData?.chapter?.cover}
+                            onError={(e) => {
+                                // If video file fails to load and we haven't tried fallback yet
+                                if (!isUsingFallback) {
+                                    console.log("Video source error, trying fallback...");
+                                    const loadFallback = async () => {
+                                        setLoading(true);
+                                        try {
+                                            let data = fallbackData;
+                                            if (!data) {
+                                                const res = await fetchDramaDownloadChapters(dramaId);
+                                                if (res.status === 'success') {
+                                                    data = res.data;
+                                                    setFallbackData(data);
+                                                }
+                                            }
+                                            if (data) {
+                                                const chapter = data.find(c => c.chapterIndex === currentEpisode - 1);
+                                                if (chapter) {
+                                                    setStreamData({
+                                                        chapter: {
+                                                            video: { mp4: chapter.videoPath },
+                                                            chapterName: chapter.chapterName
+                                                        }
+                                                    });
+                                                    setIsUsingFallback(true);
+                                                }
+                                            }
+                                        } catch (err) {
+                                            setError('Gagal memuat file video.');
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    };
+                                    loadFallback();
+                                } else {
+                                    setError('Gagal memuat file video dari semua sumber.');
+                                }
+                            }}
+                            onEnded={() => {
+                                const nextEp = currentEpisode + 1;
+                                if (nextEp <= totalEpisodes && !isEpisodeLocked(nextEp)) {
+                                    handleEpisodeClick(nextEp);
+                                }
+                            }}
+                        >
+                            Your browser does not support the video tag.
+                        </video>
+                        {isUsingFallback && (
+                            <div className="absolute top-4 right-4 bg-amber-500/80 text-white text-[10px] px-2 py-1 rounded font-bold backdrop-blur">
+                                FALLBACK MODE
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
 
