@@ -450,10 +450,10 @@ function App() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <button
                   onClick={() => handleViewAuth('login')}
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-slate-300 hover:text-white hover:bg-white/5 text-sm font-bold transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-slate-300 hover:text-white hover:bg-white/5 text-sm font-bold transition-all"
                 >
                   <LogIn size={18} /> Masuk
                 </button>
@@ -519,7 +519,49 @@ function App() {
                   </div>
                 </div>
 
-                <div className="sm:hidden mt-2 p-2">
+                {/* Login/Register untuk user yang belum login (Mobile) */}
+                {!user && (
+                  <div className="mt-2 p-2 border-t border-white/5">
+                    <button
+                      onClick={() => { handleViewAuth('login'); setShowMobileMenu(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 transition-all mb-2"
+                    >
+                      <LogIn size={18} /> Masuk
+                    </button>
+                    <button
+                      onClick={() => { handleViewAuth('register'); setShowMobileMenu(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all shadow-lg"
+                    >
+                      <UserPlus size={18} /> Daftar Sekarang
+                    </button>
+                  </div>
+                )}
+
+                {/* User Menu untuk yang sudah login (Mobile) */}
+                {user && (
+                  <div className="mt-2 p-2 border-t border-white/5">
+                    <div className="px-3 py-2 mb-2">
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                      <p className={`text-[10px] font-bold mt-1 ${user.is_subscribed ? 'text-amber-500' : 'text-slate-400'}`}>
+                        {user.is_subscribed ? 'PREMIUM MEMBER' : 'FREE ACCOUNT'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { handleViewHistory(); setShowMobileMenu(false); }}
+                      className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 transition-all mb-2"
+                    >
+                      <Clock size={18} /> Riwayat Transaksi
+                    </button>
+                    <button
+                      onClick={() => { handleLogout(); setShowMobileMenu(false); }}
+                      className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+                    >
+                      <LogOut size={18} /> Keluar
+                    </button>
+                  </div>
+                )}
+
+                <div className="sm:hidden mt-2 p-2 border-t border-white/5">
                   <div className="relative">
                     <input
                       type="text"
