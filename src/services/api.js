@@ -1,3 +1,27 @@
+// 1. URL untuk Data Film (External Drama API via Vercel Proxy)
+const API_BASE_URL = '/api';
+
+// 2. URL untuk Backend Laravel Anda (Auth & Pembayaran)
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const MY_BACKEND_URL = isLocal
+    ? 'http://localhost:8000/api'
+    : 'https://be-drama-box-production.up.railway.app/api';
+
+const handleResponse = async (response) => {
+    if (response.status === 401) {
+        // Token tidak valid (mungkin sudah login di tempat lain)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        console.warn("Session expired or logged in from another device.");
+
+        // Cek jika reload belum dilakukan untuk menghindari loop (meskipun localStorage sudah dihapus)
+        window.location.reload();
+
+        throw new Error('Sesi berakhir. Akun Anda mungkin digunakan di perangkat lain.');
+    }
+    const data = await response.json();
+    return data;
+};
 
 export const fetchLatestDramas = async (page = 1, size = 10) => {
     try {
@@ -123,27 +147,6 @@ export const fetchCategoryDramas = async (id, page = 1, size = 10) => {
         console.error("Failed to fetch category dramas:", error);
         throw error;
     }
-};
-
-// 1. URL untuk Data Film (External Drama API via Vercel Proxy)
-const API_BASE_URL = '/api';
-
-// 2. URL untuk Backend Laravel Anda (Auth & Pembayaran)
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const MY_BACKEND_URL = isLocal
-    ? 'http://localhost:8000/api'
-    : 'https://be-drama-box-production.up.railway.app/api';
-
-const handleResponse = async (response) => {
-    if (response.status === 401) {
-        // Token tidak valid (mungkin sudah login di tempat lain)
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.reload(); // Paksa reload untuk reset state
-        throw new Error('Sesi berakhir. Akun Anda mungkin digunakan di perangkat lain.');
-    }
-    const data = await response.json();
-    return data;
 };
 
 export const login = async (email, password) => {

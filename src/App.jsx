@@ -155,7 +155,7 @@ function App() {
           console.error("Session heartbeat failed", err);
         }
       }
-    }, 30000); // Cek setiap 30 detik
+    }, 10000); // Cek setiap 10 detik agar lebih responsif
 
     return () => clearInterval(sessionInterval);
   }, []);
@@ -188,9 +188,13 @@ function App() {
     }
   };
 
-  const handleDramaClick = (drama) => {
+  const handleDramaClick = async (drama) => {
+    // Proactive session check
+    if (user) {
+      await fetchMe().catch(() => { });
+    }
     setSelectedDrama(drama);
-    setWatchingEpisode(null);
+    setCurrentView('detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
