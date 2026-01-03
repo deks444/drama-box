@@ -134,6 +134,18 @@ const MY_BACKEND_URL = isLocal
     ? 'http://localhost:8000/api'
     : 'https://be-drama-box-production.up.railway.app/api';
 
+const handleResponse = async (response) => {
+    if (response.status === 401) {
+        // Token tidak valid (mungkin sudah login di tempat lain)
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.reload(); // Paksa reload untuk reset state
+        throw new Error('Sesi berakhir. Akun Anda mungkin digunakan di perangkat lain.');
+    }
+    const data = await response.json();
+    return data;
+};
+
 export const login = async (email, password) => {
     try {
         const response = await fetch(`${MY_BACKEND_URL}/login`, {
@@ -145,6 +157,22 @@ export const login = async (email, password) => {
         return data;
     } catch (error) {
         console.error("Login failed:", error);
+        throw error;
+    }
+};
+
+export const fetchMe = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+        const response = await fetch(`${MY_BACKEND_URL}/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return handleResponse(response);
+    } catch (error) {
+        console.error("Fetch me failed:", error);
         throw error;
     }
 };
@@ -163,6 +191,7 @@ export const register = async (name, email, password) => {
         throw error;
     }
 };
+
 export const deleteSubscription = async (id) => {
     const token = localStorage.getItem('token');
     try {
@@ -172,8 +201,7 @@ export const deleteSubscription = async (id) => {
                 'Authorization': `Bearer ${token}`
             }
         });
-        const data = await response.json();
-        return data;
+        return handleResponse(response);
     } catch (error) {
         console.error("Failed to delete subscription:", error);
         throw error;
@@ -188,8 +216,7 @@ export const checkTransactionStatus = async (orderId) => {
                 'Authorization': `Bearer ${token}`
             }
         });
-        const data = await response.json();
-        return data;
+        return handleResponse(response);
     } catch (error) {
         console.error("Failed to check status:", error);
         throw error;
@@ -204,8 +231,7 @@ export const fetchSubscriptions = async () => {
                 'Authorization': `Bearer ${token}`
             }
         });
-        const data = await response.json();
-        return data;
+        return handleResponse(response);
     } catch (error) {
         console.error("Failed to fetch subscriptions:", error);
         throw error;
@@ -227,8 +253,7 @@ export const checkout = async (planId, duration, amount) => {
                 amount: amount
             })
         });
-        const data = await response.json();
-        return data;
+        return handleResponse(response);
     } catch (error) {
         console.error("Checkout failed:", error);
         throw error;

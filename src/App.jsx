@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { fetchLatestDramas, searchDramas, fetchRecommendations, fetchCategories, fetchCategoryDramas } from './services/api';
+import React, { useEffect, useState, useRef } from 'react';
+import { fetchLatestDramas, searchDramas, fetchRecommendations, fetchCategories, fetchCategoryDramas, fetchMe } from './services/api';
 import DramaList from './components/DramaList';
 import DramaDetail from './components/DramaDetail';
 import DramaPlayer from './components/DramaPlayer';
@@ -29,6 +29,31 @@ function App() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Refs untuk deteksi klik di luar
+  const categoryRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Tutup Kategori jika klik di luar
+      if (categoryRef.current && !categoryRef.current.contains(event.target)) {
+        setShowCategories(false);
+      }
+      // Tutup Menu User jika klik di luar
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+      // Tutup Mobile Menu jika klik di luar navbar
+      if (showMobileMenu && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setShowMobileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMobileMenu]);
 
   const loadDramas = async (currentPage, query, categoryId) => {
     try {
@@ -120,6 +145,19 @@ function App() {
     };
 
     loadMidtransScript();
+
+    // Heartbeat untuk cek sesi (Single Session Protection)
+    const sessionInterval = setInterval(async () => {
+      if (localStorage.getItem('token')) {
+        try {
+          await fetchMe();
+        } catch (err) {
+          console.error("Session heartbeat failed", err);
+        }
+      }
+    }, 30000); // Cek setiap 30 detik
+
+    return () => clearInterval(sessionInterval);
   }, []);
 
   const handleSearch = () => {
@@ -271,7 +309,7 @@ function App() {
 
   return (
     <div className="app bg-bg-primary min-h-screen text-text-primary font-sans flex flex-col">
-      <nav className="sticky top-4 z-[100] mx-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-lg">
+      <nav ref={mobileMenuRef} className="sticky top-4 z-[100] mx-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-lg">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={resetHome}>
             <Film className="text-indigo-500" size={32} />
@@ -305,19 +343,17 @@ function App() {
               </a>
             )}
 
-            <div className="relative group">
+            <div className="relative group" ref={categoryRef}>
               <button
                 onClick={() => setShowCategories(!showCategories)}
-                className="flex items-center gap-1 hover:text-indigo-400 transition-colors"
-                onMouseEnter={() => setShowCategories(true)}
+                className={`flex items-center gap-1 transition-colors ${showCategories ? 'text-indigo-400' : 'hover:text-indigo-400'}`}
               >
-                Kategori <ChevronDown size={16} />
+                Kategori <ChevronDown size={16} className={`transition-transform duration-300 ${showCategories ? 'rotate-180' : ''}`} />
               </button>
 
               {showCategories && (
                 <div
                   className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-4 grid grid-cols-1 gap-2 z-50 animate-fade-in"
-                  onMouseLeave={() => setShowCategories(false)}
                 >
                   <div className="max-h-60 overflow-y-auto custom-scrollbar pr-2">
                     {categories.map((cat) => (
@@ -354,7 +390,7 @@ function App() {
             </div>
 
             {user ? (
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 p-1.5 pr-3 rounded-full transition-colors"
@@ -415,69 +451,70 @@ function App() {
         </div>
 
         {/* Mobile Menu */}
-        {showMobileMenu && (
-          <div className="md:hidden border-t border-white/5 bg-slate-900/95 backdrop-blur-xl rounded-b-2xl animate-fade-in overflow-hidden">
-            <div className="flex flex-col p-4 gap-2">
-              <a
-                href="#"
-                onClick={(e) => { e.preventDefault(); resetHome(); setShowMobileMenu(false); }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'home' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
-              >
-                Home
-              </a>
-              <a
-                href="#"
-                onClick={(e) => { e.preventDefault(); handleViewRekomendasi(); setShowMobileMenu(false); }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'rekomendasi' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
-              >
-                Rekomendasi
-              </a>
-              {(!user || !user.is_subscribed) && (
+        {
+          showMobileMenu && (
+            <div className="md:hidden border-t border-white/5 bg-slate-900/95 backdrop-blur-xl rounded-b-2xl animate-fade-in overflow-hidden">
+              <div className="flex flex-col p-4 gap-2">
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); handleViewMembership(); setShowMobileMenu(false); }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'membership' ? 'bg-amber-500/10 text-amber-500' : 'hover:bg-white/5 text-slate-300'}`}
+                  onClick={(e) => { e.preventDefault(); resetHome(); setShowMobileMenu(false); }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'home' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
                 >
-                  <Crown size={18} /> Membership
+                  Home
                 </a>
-              )}
-
-              <div className="px-4 py-3">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Kategori</p>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => { handleCategorySelect(cat); setShowMobileMenu(false); }}
-                      className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedCategory?.id === cat.id ? 'text-indigo-400 bg-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="sm:hidden mt-2 p-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { handleSearch(); setShowMobileMenu(false); } }}
-                    placeholder="Search dramas..."
-                    className="bg-slate-800/50 border border-slate-700 text-sm rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:border-indigo-500 w-full text-white"
-                  />
-                  <button
-                    onClick={() => { handleSearch(); setShowMobileMenu(false); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                <a
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); handleViewRekomendasi(); setShowMobileMenu(false); }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'rekomendasi' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+                >
+                  Rekomendasi
+                </a>
+                {(!user || !user.is_subscribed) && (
+                  <a
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); handleViewMembership(); setShowMobileMenu(false); }}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'membership' ? 'bg-amber-500/10 text-amber-500' : 'hover:bg-white/5 text-slate-300'}`}
                   >
-                    <Search size={18} />
-                  </button>
+                    <Crown size={18} /> Membership
+                  </a>
+                )}
+
+                <div className="px-4 py-3">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Kategori</p>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { handleCategorySelect(cat); setShowMobileMenu(false); }}
+                        className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedCategory?.id === cat.id ? 'text-indigo-400 bg-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sm:hidden mt-2 p-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { handleSearch(); setShowMobileMenu(false); } }}
+                      placeholder="Search dramas..."
+                      className="bg-slate-800/50 border border-slate-700 text-sm rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:border-indigo-500 w-full text-white"
+                    />
+                    <button
+                      onClick={() => { handleSearch(); setShowMobileMenu(false); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <Search size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </nav>
 
       <main className="container mx-auto px-4 pt-32 pb-0 flex-grow">
@@ -687,7 +724,7 @@ function App() {
           <div className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-20"></div>
         </div>
       </a>
-    </div>
+    </div >
   );
 }
 
