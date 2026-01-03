@@ -94,15 +94,32 @@ a {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
 /* Hide Video Download Button */
 video::-internal-media-controls-download-button {
-    display:none;
+  display: none;
 }
 
 video::-webkit-media-controls-enclosure {
-    overflow:hidden;
+  overflow: hidden;
 }
 
 video::-webkit-media-controls-panel {
-    width: calc(100% + 30px); /* Adjust as needed */
+  width: calc(100% + 30px);
+  /* Adjust as needed */
 }

@@ -8,6 +8,7 @@ import Membership from './components/Membership';
 import Auth from './components/Auth';
 import Checkout from './components/Checkout';
 import TransactionHistory from './components/TransactionHistory';
+import SessionExpiredModal from './components/SessionExpiredModal';
 import { Film, Menu, Search, ChevronLeft, ChevronRight, ChevronDown, Crown, LogIn, User as UserIcon, LogOut, Clock, MessageCircle, UserPlus } from 'lucide-react';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showSessionExpired, setShowSessionExpired] = useState(false);
 
   // Refs untuk deteksi klik di luar
   const categoryRef = useRef(null);
@@ -147,17 +149,30 @@ function App() {
     loadMidtransScript();
 
     // Heartbeat untuk cek sesi (Single Session Protection)
+    // Optimized: Hanya cek saat tab aktif dan interval lebih panjang
     const sessionInterval = setInterval(async () => {
-      if (localStorage.getItem('token')) {
+      // Hanya cek jika tab sedang aktif (user sedang melihat)
+      if (localStorage.getItem('token') && !document.hidden) {
+        console.log("[Heartbeat] Checking session...");
         try {
           await fetchMe();
         } catch (err) {
           console.error("Session heartbeat failed", err);
         }
       }
-    }, 10000); // Cek setiap 10 detik agar lebih responsif
+    }, 600000); // 10 menit - sangat efisien, proactive check handle semua aksi penting
 
     return () => clearInterval(sessionInterval);
+  }, []);
+
+  // Event listener untuk session expired
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setShowSessionExpired(true);
+    };
+
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
   }, []);
 
   const handleSearch = () => {
@@ -204,7 +219,11 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleWatch = (dramaId, episode, totalEpisodes = 0) => {
+  const handleWatch = async (dramaId, episode, totalEpisodes = 0) => {
+    // Proactive session check sebelum mulai nonton
+    if (user) {
+      await fetchMe().catch(() => { });
+    }
     setWatchingEpisode({ dramaId, episode, totalEpisodes });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -288,11 +307,13 @@ function App() {
     setWatchingEpisode(null);
   };
 
-  const handleSelectPlan = (plan) => {
+  const handleSelectPlan = async (plan) => {
     if (!user) {
       handleViewAuth();
       return;
     }
+    // Proactive session check sebelum checkout
+    await fetchMe().catch(() => { });
     setSelectedPlan(plan);
     setCurrentView('checkout');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -728,6 +749,9 @@ function App() {
           <div className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-20"></div>
         </div>
       </a>
+
+      {/* Session Expired Modal */}
+      {showSessionExpired && <SessionExpiredModal />}
     </div >
   );
 }

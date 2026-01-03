@@ -8,18 +8,20 @@ const MY_BACKEND_URL = isLocal
     : 'https://be-drama-box-production.up.railway.app/api';
 
 const handleResponse = async (response) => {
+    console.log(`[API Debug] Status: ${response.status} for ${response.url}`);
+
+    // Jika status 401 (Token dihapus di DB)
     if (response.status === 401) {
-        // Token tidak valid (mungkin sudah login di tempat lain)
+        console.error("[API Debug] 401 Unauthorized! Kicking user...");
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        console.warn("Session expired or logged in from another device.");
 
-        // Cek jika reload belum dilakukan untuk menghindari loop (meskipun localStorage sudah dihapus)
-        alert("Sesi Anda telah berakhir karena Anda login di perangkat lain.");
-        window.location.reload();
+        // Trigger custom event untuk modal modern
+        window.dispatchEvent(new CustomEvent('session-expired'));
 
         throw new Error('Sesi berakhir. Akun Anda mungkin digunakan di perangkat lain.');
     }
+
     const data = await response.json();
     return data;
 };
@@ -27,11 +29,8 @@ const handleResponse = async (response) => {
 export const fetchLatestDramas = async (page = 1, size = 10) => {
     try {
         const response = await fetch(`${API_BASE_URL}/home?page=${page}&size=${size}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch dramas:", error);
         throw error;
@@ -41,11 +40,8 @@ export const fetchLatestDramas = async (page = 1, size = 10) => {
 export const searchDramas = async (keyword, page = 1) => {
     try {
         const response = await fetch(`${API_BASE_URL}/search?keyword=${encodeURIComponent(keyword)}&page=${page}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to search dramas:", error);
         throw error;
@@ -55,11 +51,8 @@ export const searchDramas = async (keyword, page = 1) => {
 export const fetchDramaDetail = async (bookId) => {
     try {
         const response = await fetch(`${API_BASE_URL}/detail/${bookId}/v2`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch drama detail:", error);
         throw error;
@@ -69,11 +62,8 @@ export const fetchDramaDetail = async (bookId) => {
 export const fetchDramaChapters = async (bookId) => {
     try {
         const response = await fetch(`${API_BASE_URL}/chapters/${bookId}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch drama chapters:", error);
         throw error;
@@ -83,11 +73,8 @@ export const fetchDramaChapters = async (bookId) => {
 export const fetchDramaStream = async (bookId, episode) => {
     try {
         const response = await fetch(`${API_BASE_URL}/stream?bookId=${bookId}&episode=${episode}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch drama stream:", error);
         throw error;
@@ -97,11 +84,8 @@ export const fetchDramaStream = async (bookId, episode) => {
 export const fetchDramaDownloadChapters = async (bookId) => {
     try {
         const response = await fetch(`${API_BASE_URL}/download/${bookId}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch drama download chapters:", error);
         throw error;
@@ -111,11 +95,8 @@ export const fetchDramaDownloadChapters = async (bookId) => {
 export const fetchRecommendations = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/recommend`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch recommendations:", error);
         throw error;
@@ -125,11 +106,8 @@ export const fetchRecommendations = async () => {
 export const fetchCategories = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/categories`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch categories:", error);
         throw error;
@@ -139,11 +117,8 @@ export const fetchCategories = async () => {
 export const fetchCategoryDramas = async (id, page = 1, size = 10) => {
     try {
         const response = await fetch(`${API_BASE_URL}/category/${id}?page=${page}&size=${size}`);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return await response.json();
     } catch (error) {
         console.error("Failed to fetch category dramas:", error);
         throw error;
@@ -154,11 +129,13 @@ export const login = async (email, password) => {
     try {
         const response = await fetch(`${MY_BACKEND_URL}/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify({ email, password })
         });
-        const data = await response.json();
-        return data;
+        return await response.json();
     } catch (error) {
         console.error("Login failed:", error);
         throw error;
@@ -171,7 +148,9 @@ export const fetchMe = async () => {
     try {
         const response = await fetch(`${MY_BACKEND_URL}/me`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json', // PENTING: Agar Laravel kirim 401, bukan 302 redirect
+                'Cache-Control': 'no-cache'
             }
         });
         return handleResponse(response);
@@ -185,11 +164,13 @@ export const register = async (name, email, password) => {
     try {
         const response = await fetch(`${MY_BACKEND_URL}/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify({ name, email, password })
         });
-        const data = await response.json();
-        return data;
+        return await response.json();
     } catch (error) {
         console.error("Registration failed:", error);
         throw error;
@@ -202,7 +183,8 @@ export const deleteSubscription = async (id) => {
         const response = await fetch(`${MY_BACKEND_URL}/subscriptions/${id}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
             }
         });
         return handleResponse(response);
@@ -217,7 +199,8 @@ export const checkTransactionStatus = async (orderId) => {
     try {
         const response = await fetch(`${MY_BACKEND_URL}/subscriptions/check/${orderId}`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
             }
         });
         return handleResponse(response);
@@ -232,7 +215,8 @@ export const fetchSubscriptions = async () => {
     try {
         const response = await fetch(`${MY_BACKEND_URL}/subscriptions`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
             }
         });
         return handleResponse(response);
@@ -249,7 +233,8 @@ export const checkout = async (planId, duration, amount) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 plan_id: planId,
