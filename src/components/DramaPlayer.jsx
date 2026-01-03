@@ -133,7 +133,8 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
     return (
         <div className="min-h-screen bg-slate-900 text-white flex flex-col">
             {/* Header */}
-            <div className="p-4 flex items-center gap-4 bg-slate-900/90 backdrop-blur sticky top-0 z-50 border-b border-white/10">
+            {/* Header */}
+            <div className="p-4 flex items-center gap-4 bg-slate-900/90 backdrop-blur sticky top-[80px] z-40 border-b border-white/10">
                 <button
                     onClick={onBack}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -178,6 +179,8 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
                             controls
                             autoPlay
                             className="w-full h-full object-contain"
+                            controlsList="nodownload"
+                            onContextMenu={(e) => e.preventDefault()}
                             src={streamData?.chapter?.video?.mp4}
                             poster={streamData?.chapter?.cover}
                             onError={(e) => {

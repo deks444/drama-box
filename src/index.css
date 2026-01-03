@@ -89,6 +89,20 @@ a {
   }
 }
 
+
 .fade-in {
   animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Hide Video Download Button */
+video::-internal-media-controls-download-button {
+    display:none;
+}
+
+video::-webkit-media-controls-enclosure {
+    overflow:hidden;
+}
+
+video::-webkit-media-controls-panel {
+    width: calc(100% + 30px); /* Adjust as needed */
 }

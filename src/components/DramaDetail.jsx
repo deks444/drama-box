@@ -159,7 +159,7 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
     }
 
     return (
-        <div className="animate-fade-in pb-20 pt-8">
+        <div className="animate-fade-in pb-20 pt-10">
             <button
                 onClick={onBack}
                 className="mb-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"

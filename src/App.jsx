@@ -480,7 +480,7 @@ function App() {
         )}
       </nav>
 
-      <main className="container mx-auto px-4 pt-64 pb-0 flex-grow">
+      <main className="container mx-auto px-4 pt-32 pb-0 flex-grow">
 
         {watchingEpisode ? (
           <DramaPlayer
