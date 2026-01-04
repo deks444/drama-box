@@ -7,6 +7,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://dramabox-api-rho.vercel.app/api/:path*"
+    },
+    {
+      "source": "/stream-api/:path*",
+      "destination": "/api/stream?endpoint=:path*"
     }
   ]
 }
