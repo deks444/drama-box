@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Crown, Users, CheckCircle, Calendar, Mail, Shield, LogOut, TrendingUp } from 'lucide-react';
+import { Search, Crown, Users, CheckCircle, Calendar, Mail, Shield, LogOut, TrendingUp, LayoutDashboard, CreditCard, Menu, X } from 'lucide-react';
+import AdminTransactions from './AdminTransactions';
 
 const AdminPanel = ({ onLogout }) => {
+    const [activeView, setActiveView] = useState('dashboard');
+    const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+    // Dashboard States
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -101,30 +106,11 @@ const AdminPanel = ({ onLogout }) => {
         { value: 'permanent', label: 'Permanent', days: 36500 }
     ];
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-6">
-            {/* Header */}
-            <div className="max-w-7xl mx-auto mb-8">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-400 mb-2">
-                            Admin Panel
-                        </h1>
-                        <p className="text-slate-400">Kelola akses premium user</p>
-                    </div>
-                    <button
-                        onClick={onLogout}
-                        className="flex items-center gap-2 px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl transition-all"
-                    >
-                        <LogOut size={20} />
-                        Logout
-                    </button>
-                </div>
-            </div>
-
+    const DashboardContent = () => (
+        <div className="animate-fade-in">
             {/* Stats Cards */}
             {stats && (
-                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
@@ -164,10 +150,10 @@ const AdminPanel = ({ onLogout }) => {
             )}
 
             {/* Search Section */}
-            <div className="max-w-7xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                     <Search size={24} className="text-purple-400" />
-                    Cari User
+                    Cari & Kelola User API
                 </h2>
 
                 <div className="flex gap-4">
@@ -238,15 +224,96 @@ const AdminPanel = ({ onLogout }) => {
                     </div>
                 )}
             </div>
+        </div>
+    );
 
-            {/* Grant Premium Modal */}
+    return (
+        <div className="min-h-screen bg-slate-900 text-white flex">
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
+            {/* Sidebar */}
+            <aside className={`
+                fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-white/10 transform transition-transform duration-300 ease-in-out
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
+                <div className="p-6 h-full flex flex-col">
+                    <div className="flex items-center gap-3 mb-10">
+                        <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
+                            <Shield size={20} />
+                        </div>
+                        <h1 className="text-xl font-bold">Admin Panel</h1>
+                    </div>
+
+                    <nav className="flex-1 space-y-2">
+                        <button
+                            onClick={() => { setActiveView('dashboard'); setSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeView === 'dashboard'
+                                    ? 'bg-purple-600 shadow-lg shadow-purple-900/20'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <LayoutDashboard size={20} />
+                            Dashboard
+                        </button>
+                        <button
+                            onClick={() => { setActiveView('transactions'); setSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeView === 'transactions'
+                                    ? 'bg-purple-600 shadow-lg shadow-purple-900/20'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <CreditCard size={20} />
+                            Rekap Pembayaran
+                        </button>
+                    </nav>
+
+                    <button
+                        onClick={onLogout}
+                        className="mt-auto flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                    >
+                        <LogOut size={20} />
+                        Logout
+                    </button>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <div className="flex-1 min-w-0 bg-slate-900 flex flex-col h-screen overflow-hidden">
+                {/* Mobile Header */}
+                <header className="md:hidden p-4 border-b border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-400">
+                            <Menu size={24} />
+                        </button>
+                        <h1 className="font-bold">Admin Panel</h1>
+                    </div>
+                </header>
+
+                <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                    {activeView === 'dashboard' && <DashboardContent />}
+                    {activeView === 'transactions' && <AdminTransactions />}
+                </main>
+            </div>
+
+            {/* Grant Premium Modal - Keep it global or inside Dashboard logic? It uses state, so keep here */}
             {selectedUser && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in">
                     <div className="bg-slate-900 border border-purple-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_50px_-12px_rgba(168,85,247,0.5)]">
-                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                            <Shield className="text-purple-400" size={28} />
-                            Berikan Premium
-                        </h3>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold flex items-center gap-2">
+                                <Shield className="text-purple-400" size={28} />
+                                Berikan Premium
+                            </h3>
+                            <button onClick={() => setSelectedUser(null)} className="text-slate-400 hover:text-white">
+                                <X size={24} />
+                            </button>
+                        </div>
 
                         <div className="mb-6 p-4 bg-white/5 rounded-xl">
                             <p className="text-sm text-slate-400 mb-1">User:</p>
@@ -266,7 +333,7 @@ const AdminPanel = ({ onLogout }) => {
                                             duration_days: plan.days
                                         });
                                     }}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
                                 >
                                     {planOptions.map(plan => (
                                         <option key={plan.value} value={plan.value}>{plan.label}</option>
@@ -280,7 +347,7 @@ const AdminPanel = ({ onLogout }) => {
                                     type="number"
                                     value={grantForm.duration_days}
                                     onChange={(e) => setGrantForm({ ...grantForm, duration_days: e.target.value })}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-white"
                                     min="1"
                                 />
                             </div>
@@ -289,13 +356,13 @@ const AdminPanel = ({ onLogout }) => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setSelectedUser(null)}
-                                className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold transition-all"
+                                className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold transition-all text-white"
                             >
                                 Batal
                             </button>
                             <button
                                 onClick={handleGrantPremium}
-                                className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                                className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white"
                             >
                                 <CheckCircle size={20} />
                                 Berikan

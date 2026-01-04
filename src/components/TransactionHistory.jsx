@@ -10,7 +10,9 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
         try {
             const response = await fetchSubscriptions();
             if (response.success) {
-                setTransactions(response.data);
+                // Filter only successful transactions as requested
+                const successTransactions = response.data.filter(trx => trx.payment_status === 'success');
+                setTransactions(successTransactions);
             }
         } catch (error) {
             console.error("Error loading transactions:", error);
