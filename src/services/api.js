@@ -28,7 +28,15 @@ const handleResponse = async (response) => {
 
 export const fetchLatestDramas = async (page = 1, size = 10) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/home?page=${page}&size=${size}`);
+        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
+        // Debugging: Ensure key is loaded (restart npm run dev if you just added it)
+        if (!apiKey) console.warn("VITE_STREAM_API_KEY is missing! Please restart dev server.");
+
+        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${page}`, {
+            headers: {
+                'X-API-Key': apiKey
+            }
+        });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -39,7 +47,12 @@ export const fetchLatestDramas = async (page = 1, size = 10) => {
 
 export const searchDramas = async (keyword, page = 1) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/search?keyword=${encodeURIComponent(keyword)}&page=${page}`);
+        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
+        // Use encodingURI to safely encode the keyword/query
+        const encodedKeyword = encodeURIComponent(keyword);
+        const response = await fetch(`/stream-api/api-dramabox/cari.php?q=${encodedKeyword}&lang=in&page=${page}`, {
+            headers: { 'X-API-Key': apiKey }
+        });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -50,7 +63,10 @@ export const searchDramas = async (keyword, page = 1) => {
 
 export const fetchDramaDetail = async (bookId) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/detail/${bookId}/v2`);
+        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
+        const response = await fetch(`/stream-api/api-dramabox/drama.php?bookId=${bookId}&lang=en`, {
+            headers: { 'X-API-Key': apiKey }
+        });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -61,9 +77,15 @@ export const fetchDramaDetail = async (bookId) => {
 
 export const fetchDramaChapters = async (bookId) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/chapters/${bookId}`);
-        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-        return await response.json();
+        // Reuse fetchDramaDetail as it contains chapters now
+        const data = await fetchDramaDetail(bookId);
+        if (data.success && data.data && data.data.chapters) {
+            return {
+                message: "Success",
+                data: data.data.chapters
+            };
+        }
+        return { message: "No chapters found", data: [] };
     } catch (error) {
         console.error("Failed to fetch drama chapters:", error);
         throw error;
@@ -72,9 +94,30 @@ export const fetchDramaChapters = async (bookId) => {
 
 export const fetchDramaStream = async (bookId, episode) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/stream?bookId=${bookId}&episode=${episode}`);
-        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-        return await response.json();
+        // Reuse fetchDramaDetail as it contains stream URLs now
+        const detailRes = await fetchDramaDetail(bookId);
+
+        if (detailRes.success && detailRes.data && detailRes.data.chapters) {
+            // Find chapter by index (episode is 1-based, index is 0-based)
+            const chapter = detailRes.data.chapters.find(c => c.index === parseInt(episode) - 1);
+
+            if (chapter) {
+                return {
+                    status: 'success',
+                    data: {
+                        chapter: {
+                            video: {
+                                mp4: chapter.mp4
+                            },
+                            cover: chapter.cover,
+                            chapterName: chapter.name || `Episode ${episode}`
+                        },
+                        allEps: detailRes.data.dramaInfo?.chapterCount || detailRes.data.chapters.length
+                    }
+                };
+            }
+        }
+        throw new Error("Episode stream not found");
     } catch (error) {
         console.error("Failed to fetch drama stream:", error);
         throw error;
@@ -94,7 +137,12 @@ export const fetchDramaDownloadChapters = async (bookId) => {
 
 export const fetchRecommendations = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/recommend`);
+        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
+        // Random page for recommendations to give variety
+        const randomPage = Math.floor(Math.random() * 50) + 1;
+        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${randomPage}`, {
+            headers: { 'X-API-Key': apiKey }
+        });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -103,27 +151,21 @@ export const fetchRecommendations = async () => {
     }
 };
 
-export const fetchCategories = async () => {
+export const fetchTrendingDramas = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/categories`);
+        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
+        const response = await fetch(`/stream-api/api-dramabox/top.php`, {
+            headers: { 'X-API-Key': apiKey }
+        });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
-        console.error("Failed to fetch categories:", error);
+        console.error("Failed to fetch trending dramas:", error);
         throw error;
     }
 };
 
-export const fetchCategoryDramas = async (id, page = 1, size = 10) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/category/${id}?page=${page}&size=${size}`);
-        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-        return await response.json();
-    } catch (error) {
-        console.error("Failed to fetch category dramas:", error);
-        throw error;
-    }
-};
+
 
 export const login = async (email, password) => {
     try {

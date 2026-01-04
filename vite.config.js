@@ -25,6 +25,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/stream-api': {
+        target: 'https://streamapi.web.id',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/stream-api/, ''),
+      },
     },
   },
 })

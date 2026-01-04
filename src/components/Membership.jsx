@@ -154,13 +154,16 @@ const Membership = ({ onSelectPlan }) => {
                             </div>
 
                             <button
-                                onClick={() => onSelectPlan && onSelectPlan(plan)}
-                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.popular
-                                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30'
-                                    : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                                onClick={() => plan.id !== 'permanent' && onSelectPlan && onSelectPlan(plan)}
+                                disabled={plan.id === 'permanent'}
+                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.id === 'permanent'
+                                        ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-white/5'
+                                        : plan.popular
+                                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30'
+                                            : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                                     }`}
                             >
-                                Pilih Paket
+                                {plan.id === 'permanent' ? 'Soon' : 'Pilih Paket'}
                             </button>
                         </div>
                     ))}
@@ -172,8 +175,8 @@ const Membership = ({ onSelectPlan }) => {
                         <div
                             key={i}
                             className={`h-1.5 transition-all duration-300 rounded-full ${i === activeIndex
-                                    ? 'w-8 bg-indigo-500 shadow-lg shadow-indigo-500/20'
-                                    : 'w-1.5 bg-slate-700'
+                                ? 'w-8 bg-indigo-500 shadow-lg shadow-indigo-500/20'
+                                : 'w-1.5 bg-slate-700'
                                 }`}
                         />
                     ))}

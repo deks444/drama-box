@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { fetchLatestDramas, searchDramas, fetchRecommendations, fetchCategories, fetchCategoryDramas, fetchMe } from './services/api';
+import { fetchLatestDramas, searchDramas, fetchRecommendations, fetchMe } from './services/api';
 import DramaList from './components/DramaList';
 import DramaDetail from './components/DramaDetail';
 import DramaPlayer from './components/DramaPlayer';
@@ -17,14 +17,13 @@ function App() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
   const [selectedDrama, setSelectedDrama] = useState(null);
   const [watchingEpisode, setWatchingEpisode] = useState(null);
   const [currentView, setCurrentView] = useState('home');
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showCategories, setShowCategories] = useState(false);
+
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState('login');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -33,16 +32,13 @@ function App() {
   const [showSessionExpired, setShowSessionExpired] = useState(false);
 
   // Refs untuk deteksi klik di luar
-  const categoryRef = useRef(null);
+  // Refs untuk deteksi klik di luar
   const userMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Tutup Kategori jika klik di luar
-      if (categoryRef.current && !categoryRef.current.contains(event.target)) {
-        setShowCategories(false);
-      }
+
       // Tutup Menu User jika klik di luar
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
@@ -65,8 +61,6 @@ function App() {
 
       if (query) {
         data = await searchDramas(query, currentPage);
-      } else if (categoryId) {
-        data = await fetchCategoryDramas(categoryId, currentPage);
       } else {
         data = await fetchLatestDramas(currentPage, 10);
       }
@@ -82,6 +76,10 @@ function App() {
           setHasMore(data.data.currentPage < data.data.pages);
         } else if (Array.isArray(data.data)) {
           setDramas(data.data);
+          if (data.total_page && data.page) {
+            setHasMore(data.page < data.total_page);
+            setTotalPages(data.total_page);
+          }
         }
       } else if (Array.isArray(data)) {
         setDramas(data);
@@ -104,29 +102,20 @@ function App() {
 
   useEffect(() => {
     if (!selectedDrama) {
-      loadDramas(page, activeSearch, selectedCategory?.id);
+      loadDramas(page, activeSearch);
     }
-  }, [page, activeSearch, selectedDrama, selectedCategory]);
+  }, [page, activeSearch, selectedDrama]);
+
+
 
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const data = await fetchCategories();
-        if (data.success) {
-          setCategories(data.data);
-        }
-      } catch (err) {
-        console.error("Failed to load categories", err);
-      }
-    };
-
     // Load user session
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
 
-    loadCategories();
+
 
     // Load Midtrans Snap Script
     const loadMidtransScript = () => {
@@ -177,10 +166,11 @@ function App() {
 
   const handleSearch = () => {
     setPage(1);
+    setTotalPages(1); // Reset total pages on new search
+    setDramas([]); // Clear current dramas providing instant feedback
     setActiveSearch(searchQuery);
     setSelectedDrama(null);
     setWatchingEpisode(null);
-    setSelectedCategory(null);
   };
 
   const handleKeyDown = (e) => {
@@ -239,27 +229,22 @@ function App() {
     setPage(1);
     setSelectedDrama(null);
     setWatchingEpisode(null);
-    setSelectedCategory(null);
     setCurrentView('home');
   };
 
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(category);
-    setPage(1);
-    setSearchQuery('');
-    setActiveSearch('');
-    setSelectedDrama(null);
-    setWatchingEpisode(null);
-    setCurrentView('home');
-    setShowCategories(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+
 
   const handleViewRekomendasi = () => {
     setCurrentView('rekomendasi');
     setSelectedDrama(null);
     setWatchingEpisode(null);
-    setSelectedCategory(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleViewTrending = () => {
+    setCurrentView('trending');
+    setSelectedDrama(null);
+    setWatchingEpisode(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -267,7 +252,6 @@ function App() {
     setCurrentView('history');
     setSelectedDrama(null);
     setWatchingEpisode(null);
-    setSelectedCategory(null);
     setShowUserMenu(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -276,7 +260,6 @@ function App() {
     setCurrentView('membership');
     setSelectedDrama(null);
     setWatchingEpisode(null);
-    setSelectedCategory(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -353,10 +336,10 @@ function App() {
             </a>
             <a
               href="#"
-              onClick={(e) => { e.preventDefault(); handleViewRekomendasi(); }}
-              className={`transition-colors ${currentView === 'rekomendasi' ? 'text-white' : 'hover:text-indigo-400'}`}
+              onClick={(e) => { e.preventDefault(); handleViewTrending(); }}
+              className={`transition-colors ${currentView === 'trending' ? 'text-white' : 'hover:text-indigo-400'}`}
             >
-              Rekomendasi
+              Trending
             </a>
             {(!user || !user.is_subscribed) && (
               <a
@@ -367,33 +350,6 @@ function App() {
                 <Crown size={16} /> Membership
               </a>
             )}
-
-            <div className="relative group" ref={categoryRef}>
-              <button
-                onClick={() => setShowCategories(!showCategories)}
-                className={`flex items-center gap-1 transition-colors ${showCategories ? 'text-indigo-400' : 'hover:text-indigo-400'}`}
-              >
-                Kategori <ChevronDown size={16} className={`transition-transform duration-300 ${showCategories ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showCategories && (
-                <div
-                  className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-4 grid grid-cols-1 gap-2 z-50 animate-fade-in"
-                >
-                  <div className="max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategorySelect(cat)}
-                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 text-sm transition-colors ${selectedCategory?.id === cat.id ? 'text-indigo-400 bg-white/5' : 'text-slate-300 hover:text-white'}`}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -489,10 +445,10 @@ function App() {
                 </a>
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); handleViewRekomendasi(); setShowMobileMenu(false); }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'rekomendasi' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+                  onClick={(e) => { e.preventDefault(); handleViewTrending(); setShowMobileMenu(false); }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${currentView === 'trending' ? 'bg-indigo-600/20 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
                 >
-                  Rekomendasi
+                  Trending
                 </a>
                 {(!user || !user.is_subscribed) && (
                   <a
@@ -503,21 +459,6 @@ function App() {
                     <Crown size={18} /> Membership
                   </a>
                 )}
-
-                <div className="px-4 py-3">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Kategori</p>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => { handleCategorySelect(cat); setShowMobileMenu(false); }}
-                        className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedCategory?.id === cat.id ? 'text-indigo-400 bg-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Login/Register untuk user yang belum login (Mobile) */}
                 {!user && (
@@ -581,8 +522,9 @@ function App() {
                 </div>
               </div>
             </div>
-          )}
-      </nav>
+          )
+        }
+      </nav >
 
       <main className="container mx-auto px-4 pt-32 pb-0 flex-grow">
 
@@ -606,8 +548,13 @@ function App() {
           />
         ) : (
           <>
-            {currentView === 'rekomendasi' ? (
-              <Rekomendasi onDramaClick={handleDramaClick} isLoggedIn={!!user} />
+            {currentView === 'rekomendasi' || currentView === 'trending' ? (
+              <Rekomendasi
+                onDramaClick={handleDramaClick}
+                isLoggedIn={!!user}
+                title={currentView === 'trending' ? "Trending" : "Rekomendasi Untuk Anda"}
+                subtitle={currentView === 'trending' ? "Drama yang sedang populer saat ini" : "Drama pilihan yang dipersonalisasi khusus untuk Anda"}
+              />
             ) : currentView === 'membership' ? (
               <Membership onSelectPlan={handleSelectPlan} />
             ) : currentView === 'checkout' ? (
@@ -664,10 +611,10 @@ function App() {
                     {!loading && (
                       <div className="text-center mb-12 pt-8">
                         <h2 className="text-4xl font-bold mb-4">
-                          {activeSearch ? `Search Results for "${activeSearch}"` : selectedCategory ? `Kategori: ${selectedCategory.name}` : 'Latest Dramas'}
+                          {activeSearch ? `Search Results for "${activeSearch}"` : 'Latest Dramas'}
                         </h2>
                         <p className="text-slate-400 text-lg">
-                          {activeSearch ? `Found dramas matching your search` : selectedCategory ? `Dramas in ${selectedCategory.name} collection` : 'Discover the newest trending stories'}
+                          {activeSearch ? `Found dramas matching your search` : 'Discover the newest trending stories'}
                         </p>
                       </div>
                     )}
@@ -695,40 +642,36 @@ function App() {
 
                       <div className="flex items-center gap-2">
                         {(() => {
-                          const totalPages = 20;
+                          const maxPages = totalPages > 0 ? totalPages : 1;
                           const pages = [];
 
-                          if (totalPages >= 1) pages.push(1);
-                          if (totalPages >= 2) pages.push(2);
-                          if (totalPages >= 3) pages.push(3);
-
-                          if (page > 4) {
-                            pages.push('...');
+                          if (maxPages <= 7) {
+                            // Case 1: Total pages <= 7, show all
+                            for (let i = 1; i <= maxPages; i++) pages.push(i);
+                          } else {
+                            if (page <= 4) {
+                              // Case 2: Near start (1 2 3 4 5 ... N)
+                              for (let i = 1; i <= 5; i++) pages.push(i);
+                              pages.push('...');
+                              pages.push(maxPages);
+                            } else if (page >= maxPages - 3) {
+                              // Case 3: Near end (1 ... N-4 N-3 N-2 N-1 N)
+                              pages.push(1);
+                              pages.push('...');
+                              for (let i = maxPages - 4; i <= maxPages; i++) pages.push(i);
+                            } else {
+                              // Case 4: Middle (1 ... P-1 P P+1 ... N)
+                              pages.push(1);
+                              pages.push('...');
+                              pages.push(page - 1);
+                              pages.push(page);
+                              pages.push(page + 1);
+                              pages.push('...');
+                              pages.push(maxPages);
+                            }
                           }
 
-                          if (page > 3 && page < totalPages) {
-                            pages.push(page);
-                          }
-
-                          if (page < totalPages - 1) {
-                            pages.push('...');
-                          }
-
-                          if (totalPages > 3) {
-                            pages.push(totalPages);
-                          }
-
-                          // Deduplicate
-                          const rendered = [];
-                          let last = null;
-                          pages.forEach(p => {
-                            if (p === '...' && last === '...') return;
-                            if (typeof p === 'number' && p === last) return;
-                            rendered.push(p);
-                            last = p;
-                          });
-
-                          return rendered.map((pageNum, idx) => {
+                          return pages.map((pageNum, idx) => {
                             if (pageNum === '...') {
                               return (
                                 <span key={`ellipsis-${idx}`} className="text-slate-500 px-1 font-bold">
@@ -755,8 +698,8 @@ function App() {
 
                       <button
                         onClick={handleNextPage}
-                        disabled={!hasMore || page >= 20}
-                        className={`p-3 rounded-full flex items-center justify-center transition-all ${(!hasMore || page >= 20)
+                        disabled={!hasMore || page >= totalPages}
+                        className={`p-3 rounded-full flex items-center justify-center transition-all ${(!hasMore || page >= totalPages)
                           ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                           : 'bg-slate-700 text-white hover:bg-indigo-600 hover:scale-105 shadow-lg'
                           }`}

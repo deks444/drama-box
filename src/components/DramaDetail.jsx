@@ -16,88 +16,17 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                 // Fetch detail first to show content ASAP
                 const detailRes = await fetchDramaDetail(dramaId);
 
-                if (detailRes.success) {
-                    setDetail(detailRes.data.drama);
+                if (detailRes.success && detailRes.data) {
+                    setDetail(detailRes.data.dramaInfo);
 
                     let allChapters = [];
-                    // 1. Get full list from detail response (simple data: index, id)
                     if (detailRes.data.chapters && Array.isArray(detailRes.data.chapters)) {
                         allChapters = detailRes.data.chapters.map(c => ({
                             chapterId: c.id,
                             chapterIndex: c.index,
                             chapterName: `EP ${c.index + 1}`,
-                            chapterImg: null // Placeholder initially
+                            chapterImg: c.cover
                         }));
-                    }
-
-                    // 2. Fetch rich chapters (typically only returns first 6 with images)
-                    const chaptersRes = await fetchDramaChapters(dramaId);
-
-                    // 3. Merge & Extrapolate Images
-                    if (chaptersRes.success && Array.isArray(chaptersRes.data) && chaptersRes.data.length > 0) {
-                        const richChapters = chaptersRes.data;
-                        const richMap = new Map();
-
-                        // Find a template image URL from a valid chapter (e.g., the first one)
-                        let urlTemplate = null;
-                        let templateId = null;
-
-                        richChapters.forEach(ch => {
-                            richMap.set(ch.chapterIndex, ch);
-                            if (!urlTemplate && ch.chapterImg && ch.chapterId) {
-                                urlTemplate = ch.chapterImg;
-                                templateId = ch.chapterId.toString();
-                            }
-                        });
-
-                        // Helper to generate image for missing ones
-                        const generateImage = (id) => {
-                            if (!urlTemplate || !templateId) return null;
-                            const idStr = id.toString();
-
-                            // Logic: 
-                            // 1. Replace the ID in the filename and parent folder
-                            // 2. Calculate the 'hash' folder which is the reversed last 2 digits of the ID
-
-                            // Original hash: e.g. "17" -> "71"
-                            const limitId = templateId.slice(-2);
-                            const originalHash = limitId.split('').reverse().join('');
-
-                            // New hash
-                            const newLimitId = idStr.slice(-2);
-                            const newHash = newLimitId.split('').reverse().join('');
-
-                            // Replace hash in path (it's usually the first segment after domain, e.g. /71/)
-                            // We replace the first occurrence of `/${originalHash}/` with `/${newHash}/`
-                            // And replace all occurrences of `templateId` with `idStr`
-
-                            let newUrl = urlTemplate;
-
-                            // Replace ID first (longest match first usually safer, but here IDs are same length)
-                            // We use a global replace for the ID
-                            newUrl = newUrl.split(templateId).join(idStr);
-
-                            // Replace the hash folder. Be careful not to replace other "71"s if they exist.
-                            // The hash is typically at the start of the path: .com/71/...
-                            newUrl = newUrl.replace(`/${originalHash}/`, `/${newHash}/`);
-
-                            return newUrl;
-                        };
-
-                        allChapters = allChapters.map(ch => {
-                            const rich = richMap.get(ch.chapterIndex);
-                            if (rich && rich.chapterImg) {
-                                return rich; // Use the rich object if it has an image
-                            }
-                            // Otherwise generate it
-                            if (templateId) {
-                                return {
-                                    ...ch,
-                                    chapterImg: generateImage(ch.chapterId)
-                                };
-                            }
-                            return ch;
-                        });
                     }
 
                     setChapters(allChapters);
@@ -191,10 +120,12 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                         </h2>
 
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-slate-300 mb-6">
-                            <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-full">
-                                <Play size={14} className="text-indigo-400" />
-                                {Math.floor(detail.viewCount / 1000)}k Views
-                            </span>
+                            {detail.viewCount && (
+                                <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-full">
+                                    <Play size={14} className="text-indigo-400" />
+                                    {Math.floor(detail.viewCount / 1000)}k Views
+                                </span>
+                            )}
                             <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-full">
                                 <Star size={14} className="text-yellow-400" />
                                 {detail.followCount} Followers

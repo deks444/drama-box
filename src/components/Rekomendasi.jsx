@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { fetchRecommendations } from '../services/api';
+import { fetchRecommendations, fetchTrendingDramas } from '../services/api';
 import DramaCard from './DramaCard';
 import { Sparkles, Clock } from 'lucide-react';
 
-const Rekomendasi = ({ onDramaClick, isLoggedIn }) => {
+const Rekomendasi = ({ onDramaClick, isLoggedIn, title = "Rekomendasi Untuk Anda", subtitle = "Drama pilihan yang dipersonalisasi khusus untuk Anda" }) => {
     const [dramas, setDramas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -13,19 +13,39 @@ const Rekomendasi = ({ onDramaClick, isLoggedIn }) => {
             try {
                 setLoading(true);
                 setError(null);
-                const data = await fetchRecommendations();
+
+                let data;
+                // If title indicates trending, use fetchTrendingDramas
+                if (title === "Trending") {
+                    data = await fetchTrendingDramas();
+                } else {
+                    data = await fetchRecommendations();
+                }
 
                 if (data.success && Array.isArray(data.data)) {
-                    // Filter out dramas without proper data
-                    const validDramas = data.data.filter(drama =>
+                    // Normalize data structure
+                    const normalizedDramas = data.data.map(drama => {
+                        // Handle trending structure (id, title, thumbnail, etc)
+                        // vs recommendation structure (bookId, bookName, coverWap)
+                        return {
+                            bookId: drama.id || drama.bookId,
+                            bookName: drama.title || drama.bookName,
+                            coverWap: drama.thumbnail || drama.coverWap,
+                            chapterCount: drama.episode ? drama.episode.replace(/\D/g, '') : (drama.chapterCount || '0'),
+                            playCount: drama.views || 'Unknown', // Trending doesn't have views, use placeholder or omit
+                            tags: drama.tag ? [drama.tag] : (drama.tags || [])
+                        };
+                    });
+
+                    // Filter out dramas without essential data
+                    const validDramas = normalizedDramas.filter(drama =>
                         drama.bookId &&
                         drama.bookName &&
-                        drama.coverWap &&
-                        drama.chapterCount
+                        drama.coverWap
                     );
                     setDramas(validDramas);
                 } else {
-                    setError('Failed to load recommendations');
+                    setError('Failed to load dramas');
                 }
             } catch (err) {
                 setError(err.message);
@@ -35,12 +55,12 @@ const Rekomendasi = ({ onDramaClick, isLoggedIn }) => {
         };
 
         loadRecommendations();
-    }, []);
+    }, [title]);
 
     if (loading) {
         return (
             <div className="text-center py-20 text-xl text-slate-400 animate-pulse">
-                Loading recommendations...
+                Loading...
             </div>
         );
     }
@@ -55,7 +75,7 @@ const Rekomendasi = ({ onDramaClick, isLoggedIn }) => {
                     Kesalahan pada server,<br />mohon hubungi admin
                 </h2>
                 <p className="text-slate-400 text-base mb-8 leading-relaxed max-w-md">
-                    Gagal memuat rekomendasi untuk Anda saat ini. Silakan coba beberapa saat lagi.
+                    Gagal memuat data saat ini. Silakan coba beberapa saat lagi.
                 </p>
                 <button
                     onClick={() => window.location.reload()}
@@ -72,9 +92,9 @@ const Rekomendasi = ({ onDramaClick, isLoggedIn }) => {
             <div className="text-center mb-12 pt-8">
                 <div className="flex items-center justify-center gap-3 mb-4">
                     <Sparkles className="text-indigo-500" size={36} />
-                    <h2 className="text-4xl font-bold">Rekomendasi Untuk Anda</h2>
+                    <h2 className="text-4xl font-bold">{title}</h2>
                 </div>
-                <p className="text-slate-400 text-lg">Drama pilihan yang dipersonalisasi khusus untuk Anda</p>
+                <p className="text-slate-400 text-lg">{subtitle}</p>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
