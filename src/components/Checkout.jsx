@@ -6,7 +6,7 @@ const Checkout = ({ plan, user, onBack, onPaymentSuccess }) => {
     const [isVerifying, setIsVerifying] = useState(false);
     const [step, setStep] = useState('payment'); // payment, success
     const [isLoading, setIsLoading] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('manual'); // automatic, manual
+    const [paymentMethod, setPaymentMethod] = useState('automatic'); // automatic, manual
 
     // Konfigurasi Pembayaran Manual Anda
     const manualPaymentDetails = {
@@ -173,14 +173,20 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                     {/* Method Toggle */}
                     <div className="flex bg-slate-950/50 p-1 rounded-2xl mb-8 border border-white/5">
                         <button
-                            disabled
-                            className="flex-1 py-3 px-4 rounded-xl text-[10px] font-bold transition-all text-slate-600 bg-slate-900/50 cursor-not-allowed border border-white/5"
+                            onClick={() => setPaymentMethod('automatic')}
+                            className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${paymentMethod === 'automatic'
+                                ? 'bg-indigo-600 text-white shadow-lg'
+                                : 'text-slate-400 hover:text-white bg-transparent'
+                                }`}
                         >
-                            OTOMATIS (Coming Soon)
+                            OTOMATIS (Midtrans)
                         </button>
                         <button
                             onClick={() => setPaymentMethod('manual')}
-                            className="flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-lg"
+                            className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${paymentMethod === 'manual'
+                                ? 'bg-indigo-600 text-white shadow-lg'
+                                : 'text-slate-400 hover:text-white bg-transparent'
+                                }`}
                         >
                             MANUAL (WhatsApp)
                         </button>

@@ -6,8 +6,8 @@ const Membership = ({ onSelectPlan }) => {
         {
             id: 'daily',
             name: 'Harian',
-            price: '1.000',
-            priceNumeric: 1000,
+            price: '3.000',
+            priceNumeric: 3000,
             duration: '1 Hari',
             description: 'Akses penuh untuk maraton drama hari ini.',
             icon: <Zap className="text-yellow-400" size={24} />,
@@ -17,8 +17,8 @@ const Membership = ({ onSelectPlan }) => {
         {
             id: '3days',
             name: '3 Hari',
-            price: '3.000',
-            priceNumeric: 3000,
+            price: '8.000',
+            priceNumeric: 8000,
             duration: '3 Hari',
             description: 'Akses sepuasnya untuk menemani akhir pekanmu.',
             icon: <Calendar className="text-purple-400" size={24} />,
@@ -28,8 +28,8 @@ const Membership = ({ onSelectPlan }) => {
         {
             id: 'weekly',
             name: 'Hemat 1 Minggu',
-            price: '5.000',
-            priceNumeric: 5000,
+            price: '12.000',
+            priceNumeric: 12000,
             duration: '1 Minggu',
             description: 'Pilihan paling populer untuk pecinta drama.',
             icon: <Star className="text-pink-400" size={24} />,
@@ -39,8 +39,8 @@ const Membership = ({ onSelectPlan }) => {
         {
             id: 'monthly',
             name: 'Hemat 1 Bulan',
-            price: '15.000',
-            priceNumeric: 15000,
+            price: '35.000',
+            priceNumeric: 35000,
             duration: '1 Bulan',
             description: 'Akses tanpa batas sebulan penuh.',
             icon: <Crown className="text-amber-400" size={28} />,
@@ -154,16 +154,13 @@ const Membership = ({ onSelectPlan }) => {
                             </div>
 
                             <button
-                                onClick={() => plan.id !== 'permanent' && onSelectPlan && onSelectPlan(plan)}
-                                disabled={plan.id === 'permanent'}
-                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.id === 'permanent'
-                                        ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed border border-white/5'
-                                        : plan.popular
-                                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30'
-                                            : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                                onClick={() => onSelectPlan && onSelectPlan(plan)}
+                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.popular
+                                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30'
+                                        : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                                     }`}
                             >
-                                {plan.id === 'permanent' ? 'Soon' : 'Pilih Paket'}
+                                Pilih Paket
                             </button>
                         </div>
                     ))}

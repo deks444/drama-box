@@ -63,8 +63,9 @@ const AdminTransactions = () => {
     const getPrice = (planType) => {
         switch (planType) {
             case 'daily': return 3000;
-            case 'weekly': return 15000;
-            case 'monthly': return 50000;
+            case '3days': return 8000;
+            case 'weekly': return 12000;
+            case 'monthly': return 35000;
             case 'permanent': return 250000;
             default: return 0;
         }
