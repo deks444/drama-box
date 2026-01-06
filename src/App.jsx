@@ -30,6 +30,7 @@ function App() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showSessionExpired, setShowSessionExpired] = useState(false);
+  const [pageTransitionLoading, setPageTransitionLoading] = useState(false);
 
   // Refs untuk deteksi klik di luar
   // Refs untuk deteksi klik di luar
@@ -115,28 +116,6 @@ function App() {
       setUser(JSON.parse(savedUser));
     }
 
-
-
-    // Load Midtrans Snap Script
-    const loadMidtransScript = () => {
-      const isProduction = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true';
-      const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
-      const scriptUrl = isProduction
-        ? "https://app.midtrans.com/snap/snap.js"
-        : "https://app.sandbox.midtrans.com/snap/snap.js";
-
-      // Check if already exists
-      if (document.querySelector(`script[src="${scriptUrl}"]`)) return;
-
-      const script = document.createElement("script");
-      script.src = scriptUrl;
-      script.setAttribute("data-client-key", clientKey);
-      script.async = true;
-      document.head.appendChild(script);
-    };
-
-    loadMidtransScript();
-
     // Heartbeat untuk cek sesi (Single Session Protection)
     // Optimized: Hanya cek saat tab aktif dan interval lebih panjang
     const sessionInterval = setInterval(async () => {
@@ -194,13 +173,20 @@ function App() {
   };
 
   const handleDramaClick = async (drama) => {
-    // Proactive session check
-    if (user) {
-      await fetchMe().catch(() => { });
+    setPageTransitionLoading(true);
+    try {
+      // Proactive session check
+      if (user) {
+        await fetchMe().catch(() => { });
+      }
+      setSelectedDrama(drama);
+      setCurrentView('detail');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Small delay to show loading animation
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } finally {
+      setPageTransitionLoading(false);
     }
-    setSelectedDrama(drama);
-    setCurrentView('detail');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBackToHome = () => {
@@ -210,12 +196,19 @@ function App() {
   };
 
   const handleWatch = async (dramaId, episode, totalEpisodes = 0) => {
-    // Proactive session check sebelum mulai nonton
-    if (user) {
-      await fetchMe().catch(() => { });
+    setPageTransitionLoading(true);
+    try {
+      // Proactive session check sebelum mulai nonton
+      if (user) {
+        await fetchMe().catch(() => { });
+      }
+      setWatchingEpisode({ dramaId, episode, totalEpisodes });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Small delay to show loading
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } finally {
+      setPageTransitionLoading(false);
     }
-    setWatchingEpisode({ dramaId, episode, totalEpisodes });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClosePlayer = () => {
@@ -223,13 +216,16 @@ function App() {
     // Keep selectedDrama active so we go back to detail view
   };
 
-  const resetHome = () => {
+  const resetHome = async () => {
+    setPageTransitionLoading(true);
     setSearchQuery('');
     setActiveSearch('');
     setPage(1);
     setSelectedDrama(null);
     setWatchingEpisode(null);
     setCurrentView('home');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setPageTransitionLoading(false);
   };
 
 
@@ -241,26 +237,35 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleViewTrending = () => {
+  const handleViewTrending = async () => {
+    setPageTransitionLoading(true);
     setCurrentView('trending');
     setSelectedDrama(null);
     setWatchingEpisode(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setPageTransitionLoading(false);
   };
 
-  const handleViewHistory = () => {
+  const handleViewHistory = async () => {
+    setPageTransitionLoading(true);
     setCurrentView('history');
     setSelectedDrama(null);
     setWatchingEpisode(null);
     setShowUserMenu(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setPageTransitionLoading(false);
   };
 
-  const handleViewMembership = () => {
+  const handleViewMembership = async () => {
+    setPageTransitionLoading(true);
     setCurrentView('membership');
     setSelectedDrama(null);
     setWatchingEpisode(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setPageTransitionLoading(false);
   };
 
   const handleLoginSuccess = (userData) => {
@@ -283,11 +288,14 @@ function App() {
     setCurrentView('home');
   };
 
-  const handleViewAuth = (mode = 'login') => {
+  const handleViewAuth = async (mode = 'login') => {
+    setPageTransitionLoading(true);
     setAuthMode(mode);
     setCurrentView('auth');
     setSelectedDrama(null);
     setWatchingEpisode(null);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setPageTransitionLoading(false);
   };
 
   const handleSelectPlan = async (plan) => {
@@ -295,11 +303,17 @@ function App() {
       handleViewAuth();
       return;
     }
-    // Proactive session check sebelum checkout
-    await fetchMe().catch(() => { });
-    setSelectedPlan(plan);
-    setCurrentView('checkout');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPageTransitionLoading(true);
+    try {
+      // Proactive session check sebelum checkout
+      await fetchMe().catch(() => { });
+      setSelectedPlan(plan);
+      setCurrentView('checkout');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } finally {
+      setPageTransitionLoading(false);
+    }
   };
 
   const handlePaymentSuccess = (plan) => {
@@ -737,6 +751,20 @@ function App() {
 
       {/* Session Expired Modal */}
       {showSessionExpired && <SessionExpiredModal />}
+
+      {/* Page Transition Loading Overlay */}
+      {pageTransitionLoading && (
+        <div className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center animate-fade-in">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-indigo-400 rounded-full animate-spin" style={{ animationDuration: '0.8s', animationDirection: 'reverse' }}></div>
+            </div>
+            <p className="text-white font-bold text-lg">Memuat...</p>
+            <p className="text-slate-400 text-sm">Mohon tunggu sebentar</p>
+          </div>
+        </div>
+      )}
     </div >
   );
 }

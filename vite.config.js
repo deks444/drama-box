@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
           configure: (proxy, options) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {
               proxyReq.setHeader('X-API-Key', env.VITE_STREAM_API_KEY);
+              proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+              proxyReq.setHeader('Accept', 'application/json');
+              proxyReq.setHeader('Referer', 'https://streamapi.web.id/');
             });
           }
         },

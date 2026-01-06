@@ -1,65 +1,102 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ShieldCheck, Zap, Download, CheckCircle2, Loader2, MessageCircle } from 'lucide-react';
-import { checkout } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ShieldCheck, Zap, Download, CheckCircle2, Loader2, MessageCircle, Clock } from 'lucide-react';
+import { checkout, checkTransactionStatus } from '../services/api';
+import QRCode from 'qrcode';
 
 const Checkout = ({ plan, user, onBack, onPaymentSuccess }) => {
     const [isVerifying, setIsVerifying] = useState(false);
-    const [step, setStep] = useState('payment'); // payment, success
+    const [step, setStep] = useState('payment'); // payment, qris, success
     const [isLoading, setIsLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('automatic'); // automatic, manual
+    const [qrCodeImage, setQrCodeImage] = useState(null);
+    const [paymentData, setPaymentData] = useState(null);
+    const [timeLeft, setTimeLeft] = useState(null);
 
     // Konfigurasi Pembayaran Manual Anda
     const manualPaymentDetails = {
         whatsappNumber: "6285179691321",
         accounts: [
-            { name: "DANA", number: "0851-7969-1321", holder: "Nama Anda" },
-            { name: "GoPay", number: "0851-7969-1321", holder: "Nama Anda" },
-            { name: "ShopeePay", number: "0851-7969-1321", holder: "Nama Anda" }
+            { name: "DANA", number: "0851-7969-1321" }
         ]
     };
-
-    // Hitung Biaya Admin
-    const isAdminFeeActive = paymentMethod === 'automatic';
-    const adminFeeRate = 0.04;
-    const adminFee = isAdminFeeActive ? Math.round(plan.priceNumeric * adminFeeRate) : 0;
-    const totalAmount = plan.priceNumeric + adminFee;
 
     const formatIDR = (amount) => {
         return new Intl.NumberFormat('id-ID').format(amount);
     };
 
+    // Countdown timer
+    useEffect(() => {
+        if (!paymentData?.expired_at) return;
+
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const expiry = new Date(paymentData.expired_at).getTime();
+            const distance = expiry - now;
+
+            if (distance < 0) {
+                clearInterval(interval);
+                setTimeLeft('EXPIRED');
+                return;
+            }
+
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [paymentData]);
+
+    // Payment status polling - check every 3 seconds
+    useEffect(() => {
+        if (!paymentData?.order_id || step !== 'qris') return;
+
+        const checkPaymentStatus = async () => {
+            try {
+                const response = await checkTransactionStatus(paymentData.order_id);
+
+                if (response.success && response.status === 'success') {
+                    // Payment completed!
+                    setStep('success');
+                    if (onPaymentSuccess) {
+                        onPaymentSuccess(plan);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+                // Continue polling even if there's an error
+            }
+        };
+
+        // Check immediately
+        checkPaymentStatus();
+
+        // Then check every 3 seconds
+        const interval = setInterval(checkPaymentStatus, 3000);
+
+        return () => clearInterval(interval);
+    }, [paymentData, step, plan, onPaymentSuccess]);
+
     const handlePayNow = async () => {
         setIsLoading(true);
         try {
-            // Gunakan totalAmount yang sudah termasuk fee 4%
-            const response = await checkout(plan.id, plan.duration, totalAmount);
+            const response = await checkout(plan.id, plan.duration);
 
-            if (response.success && response.snap_token) {
-                if (!window.snap) {
-                    alert("Sedang menghubungkan ke Midtrans, silakan tunggu sebentar dan coba lagi.");
-                    setIsLoading(false);
-                    return;
-                }
-                window.snap.pay(response.snap_token, {
-                    onSuccess: function (result) {
-                        setStep('success');
-                        if (onPaymentSuccess) {
-                            onPaymentSuccess(plan);
-                        }
-                    },
-                    onPending: function (result) {
-                        alert("Pembayaran anda sedang diproses, silakan cek berkala.");
-                        onBack();
-                    },
-                    onError: function (result) {
-                        alert("Pembayaran gagal, silakan coba lagi.");
-                        setIsLoading(false);
-                    },
-                    onClose: function () {
-                        alert('Anda menutup popup. Transaksi masih tersimpan sebagai "Pending" di Riwayat Transaksi. Anda bisa mengecek status atau membatalkannya di sana.');
-                        setIsLoading(false);
+            if (response.success && response.payment) {
+                setPaymentData(response.payment);
+
+                // Generate QR Code from payment_number (QRIS string)
+                const qrDataUrl = await QRCode.toDataURL(response.payment.qr_string, {
+                    width: 300,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
                     }
                 });
+
+                setQrCodeImage(qrDataUrl);
+                setStep('qris');
             } else {
                 alert("Gagal membuat transaksi: " + (response.message || "Unknown error"));
             }
@@ -72,6 +109,7 @@ const Checkout = ({ plan, user, onBack, onPaymentSuccess }) => {
     };
 
     const handleManualConfirm = () => {
+        const totalAmount = plan.priceNumeric;
         const message = `Halo Admin, saya ingin konfirmasi pembayaran manual:
         
 *Nama:* ${user.name}
@@ -100,6 +138,83 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                 >
                     Mulai Menonton
                 </button>
+            </div>
+        );
+    }
+
+    if (step === 'qris') {
+        return (
+            <div className="max-w-2xl mx-auto pb-20 pt-12 animate-fade-in">
+                <button
+                    onClick={() => setStep('payment')}
+                    className="flex items-center gap-2 text-slate-400 hover:text-white mb-10 transition-colors group"
+                >
+                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                    <span>Kembali</span>
+                </button>
+
+                <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-8 text-center">
+                    <h2 className="text-3xl font-bold mb-2">Scan QRIS untuk Bayar</h2>
+                    <p className="text-slate-400 mb-8">Gunakan aplikasi e-wallet favoritmu</p>
+
+                    {/* Timer */}
+                    {timeLeft && timeLeft !== 'EXPIRED' && (
+                        <div className="flex items-center justify-center gap-2 mb-6 text-amber-400">
+                            <Clock size={20} />
+                            <span className="font-mono text-xl font-bold">{timeLeft}</span>
+                        </div>
+                    )}
+
+                    {timeLeft === 'EXPIRED' && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6">
+                            <p className="text-red-400 font-bold">QR Code sudah kadaluarsa. Silakan buat transaksi baru.</p>
+                        </div>
+                    )}
+
+                    {/* QR Code */}
+                    {qrCodeImage && (
+                        <div className="bg-white p-6 rounded-2xl inline-block mb-6">
+                            <img src={qrCodeImage} alt="QRIS Code" className="w-72 h-72" />
+                        </div>
+                    )}
+
+                    {/* Payment Details */}
+                    <div className="bg-slate-950/50 border border-white/5 rounded-2xl p-6 mb-6 text-left">
+                        <div className="space-y-3">
+                            <div className="flex justify-between">
+                                <span className="text-slate-400">Order ID</span>
+                                <span className="text-white font-mono text-sm">{paymentData?.order_id}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-400">Harga Paket</span>
+                                <span className="text-white">Rp {formatIDR(paymentData?.amount || 0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-slate-400">Biaya Admin</span>
+                                <span className="text-white">Rp {formatIDR(paymentData?.fee || 0)}</span>
+                            </div>
+                            <div className="h-px bg-white/10 my-2"></div>
+                            <div className="flex justify-between text-lg">
+                                <span className="text-slate-400 font-bold">Total Pembayaran</span>
+                                <span className="text-indigo-400 font-bold text-2xl">Rp {formatIDR(paymentData?.total_payment || 0)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                            <Loader2 className="animate-spin text-indigo-400" size={16} />
+                            <p className="text-xs text-indigo-400 font-bold">Mengecek status pembayaran...</p>
+                        </div>
+                        <p className="text-xs text-slate-400 text-center">
+                            Setelah pembayaran berhasil, akun kamu akan otomatis aktif dalam beberapa detik.
+                        </p>
+                    </div>
+
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                        Powered by Pakasir
+                    </p>
+                </div>
             </div>
         );
     }
@@ -135,16 +250,10 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                                     <span className="text-slate-400">Harga Paket</span>
                                     <span className="text-white font-medium">Rp {plan.price}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-400">Biaya Admin {isAdminFeeActive ? '(4%)' : '(Manual)'}</span>
-                                    <span className={isAdminFeeActive ? "text-white font-medium" : "text-green-400 font-bold"}>
-                                        {isAdminFeeActive ? `Rp ${formatIDR(adminFee)}` : 'GRATIS'}
-                                    </span>
-                                </div>
                                 <div className="h-px bg-white/5 my-1"></div>
                                 <div className="flex justify-between items-center text-lg pt-1">
-                                    <span className="text-slate-400">Total Pembayaran</span>
-                                    <span className="text-2xl font-bold text-indigo-400">Rp {formatIDR(totalAmount)}</span>
+                                    <span className="text-slate-400">Total</span>
+                                    <span className="text-2xl font-bold text-indigo-400">Rp {plan.price}</span>
                                 </div>
                             </div>
                         </div>
@@ -155,7 +264,7 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                             <ShieldCheck className="text-indigo-400 flex-shrink-0" />
                             <div>
                                 <h4 className="font-bold text-sm text-white">Pembayaran Aman</h4>
-                                <p className="text-xs text-slate-500 mt-1">Transaksi kamu dilindungi dengan enkripsi keamanan tingkat tinggi oleh Midtrans.</p>
+                                <p className="text-xs text-slate-500 mt-1">Transaksi kamu dilindungi dengan enkripsi keamanan tingkat tinggi oleh Pakasir.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-4 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
@@ -179,7 +288,7 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                                 : 'text-slate-400 hover:text-white bg-transparent'
                                 }`}
                         >
-                            OTOMATIS (Midtrans)
+                            QRIS (Otomatis)
                         </button>
                         <button
                             onClick={() => setPaymentMethod('manual')}
@@ -197,9 +306,9 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                             <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6">
                                 <ShieldCheck className="text-indigo-500" size={40} />
                             </div>
-                            <h3 className="text-2xl font-bold mb-4 text-white">Bayar Otomatis</h3>
+                            <h3 className="text-2xl font-bold mb-4 text-white">Bayar dengan QRIS</h3>
                             <p className="text-slate-400 mb-8 max-w-xs text-sm">
-                                Pilih metode pembayaran (QRIS, VA, E-Wallet) dan akun akan otomatis aktif setelah bayar.
+                                Scan QR Code dengan aplikasi e-wallet favoritmu (GoPay, OVO, DANA, ShopeePay, dll) dan akun akan otomatis aktif.
                             </p>
 
                             <button
@@ -213,11 +322,11 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                                         <span>Memproses...</span>
                                     </>
                                 ) : (
-                                    <span>Lanjut Pembayaran</span>
+                                    <span>Tampilkan QR Code</span>
                                 )}
                             </button>
                             <p className="mt-6 text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                                Powered by Midtrans
+                                Powered by Pakasir
                             </p>
                         </div>
                     ) : (
@@ -225,11 +334,16 @@ Saya sudah melakukan transfer, berikut bukti pembayarannya:`;
                             <h3 className="text-xl font-bold mb-4 text-white text-center">Detail Transfer Manual</h3>
                             <div className="space-y-3 mb-8">
                                 {manualPaymentDetails.accounts.map((acc, i) => (
-                                    <div key={i} className="bg-slate-950/50 border border-white/5 p-4 rounded-2xl flex justify-between items-center group hover:border-indigo-500/30 transition-all">
-                                        <div>
-                                            <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">{acc.name}</p>
-                                            <p className="text-white font-bold text-lg">{acc.number}</p>
-                                            <p className="text-slate-500 text-[10px]">A/N {acc.holder}</p>
+                                    <div key={i} className="bg-slate-950/50 border border-white/5 p-5 rounded-2xl flex justify-between items-center group hover:border-indigo-500/30 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            {/* DANA Logo */}
+                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                                                <span className="text-white font-black text-lg">D</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">{acc.name}</p>
+                                                <p className="text-white font-bold text-lg">{acc.number}</p>
+                                            </div>
                                         </div>
                                         <button
                                             onClick={() => {

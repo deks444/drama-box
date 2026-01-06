@@ -50,9 +50,13 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
 
     if (loading && !detail) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 animate-pulse">
-                <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                Loading details...
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-400 animate-fade-in">
+                <div className="relative mb-6">
+                    <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-indigo-400 rounded-full animate-spin" style={{ animationDuration: '0.8s', animationDirection: 'reverse' }}></div>
+                </div>
+                <p className="text-white font-bold text-lg">Memuat Detail Drama...</p>
+                <p className="text-slate-400 text-sm mt-2">Mohon tunggu sebentar</p>
             </div>
         );
     }

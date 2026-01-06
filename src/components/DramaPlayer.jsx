@@ -166,10 +166,14 @@ const DramaPlayer = ({ dramaId, initialEpisode = 1, initialTotalEpisodes = 0, on
                         </button>
                     </div>
                 ) : loading ? (
-                    <div className="w-full h-full flex items-center justify-center text-slate-500 animate-pulse bg-slate-100/5">
+                    <div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-900">
                         <div className="flex flex-col items-center gap-4">
-                            <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                            Loading stream...
+                            <div className="relative">
+                                <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-indigo-400 rounded-full animate-spin" style={{ animationDuration: '0.8s', animationDirection: 'reverse' }}></div>
+                            </div>
+                            <p className="text-white font-bold text-lg">Memuat Video...</p>
+                            <p className="text-slate-400 text-sm">Mohon tunggu sebentar</p>
                         </div>
                     </div>
                 ) : (

@@ -71,7 +71,20 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
         }
     };
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (status, expiresAt) => {
+        // Check if subscription is expired
+        if (status === 'success' && expiresAt) {
+            const now = new Date();
+            const expiry = new Date(expiresAt);
+            if (expiry < now) {
+                return (
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/10 text-slate-500 text-xs font-bold border border-slate-500/20">
+                        <XCircle size={12} /> EXPIRED
+                    </span>
+                );
+            }
+        }
+
         switch (status) {
             case 'success':
                 return (
@@ -161,7 +174,7 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
 
                                 <div className="flex flex-col items-end gap-2 text-right">
                                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-1">Status</p>
-                                    {getStatusBadge(trx.payment_status)}
+                                    {getStatusBadge(trx.payment_status, trx.expires_at)}
 
                                     {trx.payment_status === 'pending' && trx.snap_token && (
                                         <div className="flex gap-2 mt-1">

@@ -32,7 +32,7 @@ export const fetchLatestDramas = async (page = 1, size = 10) => {
         // Debugging: Ensure key is loaded (restart npm run dev if you just added it)
         if (!apiKey) console.warn("VITE_STREAM_API_KEY is missing! Please restart dev server.");
 
-        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${page}`);
+        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${page}&lang=id`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -46,7 +46,7 @@ export const searchDramas = async (keyword, page = 1) => {
         const apiKey = import.meta.env.VITE_STREAM_API_KEY;
         // Use encodingURI to safely encode the keyword/query
         const encodedKeyword = encodeURIComponent(keyword);
-        const response = await fetch(`/stream-api/api-dramabox/cari.php?q=${encodedKeyword}&lang=in&page=${page}`);
+        const response = await fetch(`/stream-api/api-dramabox/cari.php?q=${encodedKeyword}&lang=id&page=${page}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -57,7 +57,7 @@ export const searchDramas = async (keyword, page = 1) => {
 
 export const fetchDramaDetail = async (bookId) => {
     try {
-        const response = await fetch(`/stream-api/api-dramabox/drama.php?bookId=${bookId}&lang=en`);
+        const response = await fetch(`/stream-api/api-dramabox/drama.php?bookId=${bookId}&lang=id`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -131,7 +131,7 @@ export const fetchRecommendations = async () => {
         const apiKey = import.meta.env.VITE_STREAM_API_KEY;
         // Random page for recommendations to give variety
         const randomPage = Math.floor(Math.random() * 50) + 1;
-        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${randomPage}`);
+        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${randomPage}&lang=id`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -143,7 +143,7 @@ export const fetchRecommendations = async () => {
 export const fetchTrendingDramas = async () => {
     try {
         const apiKey = import.meta.env.VITE_STREAM_API_KEY;
-        const response = await fetch(`/stream-api/api-dramabox/top.php`);
+        const response = await fetch(`/stream-api/api-dramabox/top.php?lang=id`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
