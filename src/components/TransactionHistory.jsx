@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { fetchSubscriptions, checkTransactionStatus, deleteSubscription } from '../services/api';
-import { Clock, CheckCircle2, XCircle, AlertCircle, Calendar, RefreshCcw, Loader2, Trash2 } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, AlertCircle, Calendar, RefreshCcw, Loader2, Trash2, QrCode } from 'lucide-react';
+import QRCodeLib from 'qrcode';
 
 const TransactionHistory = ({ user, onStatusUpdate }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showQRModal, setShowQRModal] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [qrCodeImage, setQrCodeImage] = useState(null);
 
     const loadTransactions = async () => {
         try {
@@ -24,19 +28,27 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
         loadTransactions();
     }, []);
 
-    const handlePayAgain = (snapToken) => {
-        if (window.snap && snapToken) {
-            window.snap.pay(snapToken, {
-                onSuccess: () => {
-                    if (onStatusUpdate && user) {
-                        onStatusUpdate({ ...user, is_subscribed: true });
-                    }
-                    loadTransactions();
-                },
-                onPending: () => loadTransactions(),
-                onError: () => loadTransactions(),
-                onClose: () => loadTransactions(),
+    const handleShowQR = async (trx) => {
+        if (!trx.snap_token) {
+            alert('QR Code tidak tersedia');
+            return;
+        }
+
+        try {
+            const qrDataUrl = await QRCodeLib.toDataURL(trx.snap_token, {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
             });
+            setQrCodeImage(qrDataUrl);
+            setSelectedTransaction(trx);
+            setShowQRModal(true);
+        } catch (error) {
+            console.error('Error generating QR:', error);
+            alert('Gagal menampilkan QR Code');
         }
     };
 
@@ -49,6 +61,7 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
                     onStatusUpdate({ ...user, is_subscribed: true });
                 }
                 loadTransactions();
+                setShowQRModal(false);
             }
         } catch (error) {
             console.error("Error checking status:", error);
@@ -62,6 +75,7 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
             const response = await deleteSubscription(id);
             if (response.success) {
                 loadTransactions();
+                setShowQRModal(false);
             } else {
                 alert(response.message);
             }
@@ -111,6 +125,21 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
                     </span>
                 );
         }
+    };
+
+    const formatIDR = (amount) => {
+        return new Intl.NumberFormat('id-ID').format(amount);
+    };
+
+    const getPriceFromPlanType = (planType) => {
+        const prices = {
+            'daily': 3000,
+            '3days': 8000,
+            'weekly': 12000,
+            'monthly': 35000,
+            'permanent': 250000,
+        };
+        return prices[planType] || 0;
     };
 
     if (loading) {
@@ -177,25 +206,19 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
                                     {getStatusBadge(trx.payment_status, trx.expires_at)}
 
                                     {trx.payment_status === 'pending' && trx.snap_token && (
-                                        <div className="flex gap-2 mt-1">
+                                        <div className="flex gap-2 mt-2">
+                                            <button
+                                                onClick={() => handleShowQR(trx)}
+                                                className="text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-1.5"
+                                            >
+                                                <QrCode size={14} /> LIHAT QR
+                                            </button>
                                             <button
                                                 onClick={() => handleDelete(trx.id)}
-                                                className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                                className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                                                 title="Batalkan Transaksi"
                                             >
                                                 <Trash2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleCheckStatus(trx.order_id)}
-                                                className="text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-white/10 transition-all flex items-center gap-1.5"
-                                            >
-                                                <RefreshCcw size={12} /> CEK
-                                            </button>
-                                            <button
-                                                onClick={() => handlePayAgain(trx.snap_token)}
-                                                className="text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-all shadow-lg shadow-indigo-600/20"
-                                            >
-                                                BAYAR
                                             </button>
                                         </div>
                                     )}
@@ -203,6 +226,57 @@ const TransactionHistory = ({ user, onStatusUpdate }) => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* QR Code Modal */}
+            {showQRModal && selectedTransaction && (
+                <div className="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowQRModal(false)}>
+                    <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 max-w-md w-full text-center" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-2xl font-bold mb-2">Scan QRIS untuk Bayar</h3>
+                        <p className="text-slate-400 mb-6 text-sm">Gunakan aplikasi e-wallet favoritmu</p>
+
+                        {qrCodeImage && (
+                            <div className="bg-white p-6 rounded-2xl inline-block mb-6">
+                                <img src={qrCodeImage} alt="QRIS Code" className="w-64 h-64" />
+                            </div>
+                        )}
+
+                        <div className="bg-slate-950/50 border border-white/5 rounded-2xl p-4 mb-6 text-left">
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-400">Paket</span>
+                                    <span className="text-white font-bold">{selectedTransaction.plan_type.toUpperCase()}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-400">Total</span>
+                                    <span className="text-indigo-400 font-bold">Rp {formatIDR(getPriceFromPlanType(selectedTransaction.plan_type))}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => handleCheckStatus(selectedTransaction.order_id)}
+                                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                            >
+                                <RefreshCcw size={16} /> Cek Status
+                            </button>
+                            <button
+                                onClick={() => setShowQRModal(false)}
+                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl font-bold transition-all"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => handleDelete(selectedTransaction.id)}
+                            className="mt-4 text-red-400 hover:text-red-300 text-sm font-bold transition-all flex items-center gap-2 mx-auto"
+                        >
+                            <Trash2 size={14} /> Batalkan Transaksi
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

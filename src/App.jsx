@@ -133,14 +133,23 @@ function App() {
     return () => clearInterval(sessionInterval);
   }, []);
 
-  // Event listener untuk session expired
+  // Event listener untuk session expired dan navigate to history
   useEffect(() => {
     const handleSessionExpired = () => {
       setShowSessionExpired(true);
     };
 
+    const handleNavigateToHistory = () => {
+      handleViewHistory();
+    };
+
     window.addEventListener('session-expired', handleSessionExpired);
-    return () => window.removeEventListener('session-expired', handleSessionExpired);
+    window.addEventListener('navigate-to-history', handleNavigateToHistory);
+
+    return () => {
+      window.removeEventListener('session-expired', handleSessionExpired);
+      window.removeEventListener('navigate-to-history', handleNavigateToHistory);
+    };
   }, []);
 
   const handleSearch = () => {

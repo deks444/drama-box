@@ -98,7 +98,18 @@ const Checkout = ({ plan, user, onBack, onPaymentSuccess }) => {
                 setQrCodeImage(qrDataUrl);
                 setStep('qris');
             } else {
-                alert("Gagal membuat transaksi: " + (response.message || "Unknown error"));
+                // Check if error is due to pending transaction
+                if (response.has_pending) {
+                    if (confirm(response.message + "\n\nKlik OK untuk ke Riwayat Transaksi.")) {
+                        onBack(); // Go back to close checkout
+                        // Trigger navigation to history (you'll need to pass this from parent)
+                        setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('navigate-to-history'));
+                        }, 100);
+                    }
+                } else {
+                    alert("Gagal membuat transaksi: " + (response.message || "Unknown error"));
+                }
             }
         } catch (error) {
             console.error("Payment error:", error);
