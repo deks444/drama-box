@@ -59,11 +59,24 @@ export const searchDramas = async (keyword, page = 1) => {
     }
 };
 
+const detailCache = new Map();
+
 export const fetchDramaDetail = async (bookId) => {
+    if (detailCache.has(bookId)) {
+        console.log(`[Cache Hit] Returning cached detail for: ${bookId}`);
+        return detailCache.get(bookId);
+    }
+
     try {
         const response = await fetch(`/stream-api/api-dramabox/drama.php?id=${bookId}&lang=in&api_key=${STREAM_API_KEY}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-        return await response.json();
+        const data = await response.json();
+
+        if (data.success) {
+            detailCache.set(bookId, data);
+        }
+
+        return data;
     } catch (error) {
         console.error("Failed to fetch drama detail:", error);
         throw error;

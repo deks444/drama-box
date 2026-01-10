@@ -180,21 +180,13 @@ function App() {
     }
   };
 
-  const handleDramaClick = async (drama) => {
-    setPageTransitionLoading(true);
-    try {
-      // Proactive session check
-      if (user) {
-        await fetchMe().catch(() => { });
-      }
-      setSelectedDrama(drama);
-      setCurrentView('detail');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Small delay to show loading animation
-      await new Promise(resolve => setTimeout(resolve, 300));
-    } finally {
-      setPageTransitionLoading(false);
-    }
+  const handleDramaClick = (drama) => {
+    // Background session check - no await
+    if (user) fetchMe().catch(() => { });
+
+    setSelectedDrama(drama);
+    setCurrentView('detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBackToHome = () => {
@@ -203,20 +195,12 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleWatch = async (dramaId, episode, totalEpisodes = 0) => {
-    setPageTransitionLoading(true);
-    try {
-      // Proactive session check sebelum mulai nonton
-      if (user) {
-        await fetchMe().catch(() => { });
-      }
-      setWatchingEpisode({ dramaId, episode, totalEpisodes });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Small delay to show loading
-      await new Promise(resolve => setTimeout(resolve, 300));
-    } finally {
-      setPageTransitionLoading(false);
-    }
+  const handleWatch = (dramaId, episode, totalEpisodes = 0) => {
+    // Background session check - no await
+    if (user) fetchMe().catch(() => { });
+
+    setWatchingEpisode({ dramaId, episode, totalEpisodes });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClosePlayer = () => {
@@ -224,16 +208,13 @@ function App() {
     // Keep selectedDrama active so we go back to detail view
   };
 
-  const resetHome = async () => {
-    setPageTransitionLoading(true);
+  const resetHome = () => {
     setSearchQuery('');
     setActiveSearch('');
     setPage(1);
     setSelectedDrama(null);
     setWatchingEpisode(null);
     setCurrentView('home');
-    await new Promise(resolve => setTimeout(resolve, 200));
-    setPageTransitionLoading(false);
   };
 
 
@@ -245,35 +226,26 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleViewTrending = async () => {
-    setPageTransitionLoading(true);
+  const handleViewTrending = () => {
     setCurrentView('trending');
     setSelectedDrama(null);
     setWatchingEpisode(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    await new Promise(resolve => setTimeout(resolve, 200));
-    setPageTransitionLoading(false);
   };
 
-  const handleViewHistory = async () => {
-    setPageTransitionLoading(true);
+  const handleViewHistory = () => {
     setCurrentView('history');
     setSelectedDrama(null);
     setWatchingEpisode(null);
     setShowUserMenu(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    await new Promise(resolve => setTimeout(resolve, 200));
-    setPageTransitionLoading(false);
   };
 
-  const handleViewMembership = async () => {
-    setPageTransitionLoading(true);
+  const handleViewMembership = () => {
     setCurrentView('membership');
     setSelectedDrama(null);
     setWatchingEpisode(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    await new Promise(resolve => setTimeout(resolve, 200));
-    setPageTransitionLoading(false);
   };
 
   const handleLoginSuccess = (userData) => {
@@ -296,14 +268,11 @@ function App() {
     setCurrentView('home');
   };
 
-  const handleViewAuth = async (mode = 'login') => {
-    setPageTransitionLoading(true);
+  const handleViewAuth = (mode = 'login') => {
     setAuthMode(mode);
     setCurrentView('auth');
     setSelectedDrama(null);
     setWatchingEpisode(null);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    setPageTransitionLoading(false);
   };
 
   const handleSelectPlan = async (plan) => {
