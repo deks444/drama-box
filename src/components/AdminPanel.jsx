@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Crown, Users, CheckCircle, Calendar, Mail, Shield, LogOut, TrendingUp, LayoutDashboard, CreditCard, Menu, X } from 'lucide-react';
+import { Search, Crown, Users, CheckCircle, Calendar, Mail, Shield, LogOut, TrendingUp, LayoutDashboard, CreditCard, Menu, X, Settings } from 'lucide-react';
 import AdminTransactions from './AdminTransactions';
 
 const AdminPanel = ({ onLogout }) => {
@@ -17,13 +17,36 @@ const AdminPanel = ({ onLogout }) => {
         duration_days: 30
     });
 
-    const MY_BACKEND_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:8001/api'
+    const MY_BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? `http://${window.location.hostname}:8000/api`
         : 'https://be-drama-box-production.up.railway.app/api';
 
     useEffect(() => {
         fetchStats();
+        fetchUsers();
     }, []);
+
+    const fetchUsers = async () => {
+        const token = localStorage.getItem('admin_token');
+        setLoading(true);
+        try {
+            const response = await fetch(`${MY_BACKEND_URL}/admin/users`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                // Laravel pagination returns data in data.data.data
+                setUsers(data.data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch users:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchStats = async () => {
         const token = localStorage.getItem('admin_token');
@@ -44,7 +67,10 @@ const AdminPanel = ({ onLogout }) => {
     };
 
     const handleSearch = async () => {
-        if (!searchQuery.trim()) return;
+        if (!searchQuery.trim()) {
+            fetchUsers();
+            return;
+        }
 
         const token = localStorage.getItem('admin_token');
         setLoading(true);
@@ -152,8 +178,8 @@ const AdminPanel = ({ onLogout }) => {
             {/* Search Section */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 mb-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <Search size={24} className="text-purple-400" />
-                    Cari & Kelola User API
+                    <Users size={24} className="text-purple-400" />
+                    Kelola User
                 </h2>
 
                 <div className="flex gap-4">
@@ -175,54 +201,87 @@ const AdminPanel = ({ onLogout }) => {
                     </button>
                 </div>
 
-                {/* Results */}
-                {users.length > 0 && (
-                    <div className="mt-6 space-y-3">
-                        {users.map((user) => {
-                            const activeSub = user.subscriptions?.[0];
-                            const isPremium = activeSub && new Date(activeSub.expires_at) > new Date();
+                {/* Table Results */}
+                <div className="mt-8 overflow-x-auto">
+                    <table className="w-full border-separate border-spacing-y-2">
+                        <thead>
+                            <tr className="text-slate-400 text-sm">
+                                <th className="px-6 py-3 font-medium text-left">User</th>
+                                <th className="px-6 py-3 font-medium text-left">Email</th>
+                                <th className="px-6 py-3 font-medium text-left">Status</th>
+                                <th className="px-6 py-3 font-medium text-left">Terdaftar</th>
+                                <th className="px-6 py-3 font-medium text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="space-y-4">
+                            {users.length > 0 ? (
+                                users.map((user) => {
+                                    const activeSub = user.subscriptions?.[0];
+                                    const isPremium = activeSub && new Date(activeSub.expires_at) > new Date();
 
-                            return (
-                                <div
-                                    key={user.id}
-                                    className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 hover:border-purple-500/50 transition-all cursor-pointer"
-                                    onClick={() => setSelectedUser(user)}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isPremium ? 'bg-amber-500/20' : 'bg-slate-700'}`}>
-                                                {isPremium ? <Crown className="text-amber-400" size={20} /> : <Users className="text-slate-400" size={20} />}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold">{user.name}</p>
-                                                <p className="text-sm text-slate-400 flex items-center gap-2">
+                                    return (
+                                        <tr
+                                            key={user.id}
+                                            className="group bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                                            onClick={() => setSelectedUser(user)}
+                                        >
+                                            <td className="px-6 py-4 rounded-l-2xl border-y border-l border-white/10 group-hover:border-purple-500/30">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isPremium ? 'bg-amber-500/20' : 'bg-slate-700'}`}>
+                                                        {isPremium ? <Crown className="text-amber-400" size={18} /> : <Users className="text-slate-400" size={18} />}
+                                                    </div>
+                                                    <span className="font-bold">{user.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 border-y border-white/10 group-hover:border-purple-500/30">
+                                                <div className="flex items-center gap-2 text-slate-400">
                                                     <Mail size={14} />
                                                     {user.email}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            {isPremium ? (
-                                                <>
-                                                    <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-bold mb-1">
-                                                        PREMIUM
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 border-y border-white/10 group-hover:border-purple-500/30">
+                                                {isPremium ? (
+                                                    <div className="flex flex-col">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 w-fit">
+                                                            PREMIUM
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-500 mt-1">
+                                                            Exp: {new Date(activeSub.expires_at).toLocaleDateString('id-ID')}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-700 text-slate-400 w-fit">
+                                                        FREE
                                                     </span>
-                                                    <p className="text-xs text-slate-400">
-                                                        Expired: {new Date(activeSub.expires_at).toLocaleDateString('id-ID')}
-                                                    </p>
-                                                </>
-                                            ) : (
-                                                <span className="inline-block px-3 py-1 bg-slate-700 text-slate-400 rounded-full text-xs font-bold">
-                                                    FREE
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 border-y border-white/10 group-hover:border-purple-500/30 text-slate-400 text-sm">
+                                                {new Date(user.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </td>
+                                            <td className="px-6 py-4 rounded-r-2xl border-y border-r border-white/10 group-hover:border-purple-500/30 text-right">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedUser(user);
+                                                    }}
+                                                    className="p-2 hover:bg-purple-500/20 text-purple-400 rounded-lg transition-all"
+                                                >
+                                                    <Settings size={20} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-10 text-center text-slate-500 italic">
+                                        {loading ? 'Memuat data...' : 'Tidak ada user ditemukan'}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
