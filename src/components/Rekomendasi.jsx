@@ -22,18 +22,21 @@ const Rekomendasi = ({ onDramaClick, isLoggedIn, title = "Rekomendasi Untuk Anda
                     data = await fetchRecommendations();
                 }
 
-                if (data.success && Array.isArray(data.data)) {
+                if (data.success && (data.data.list || Array.isArray(data.data))) {
+                    const rawList = data.data.list || data.data;
+
                     // Normalize data structure
-                    const normalizedDramas = data.data.map(drama => {
-                        // Handle trending structure (id, title, thumbnail, etc)
-                        // vs recommendation structure (bookId, bookName, coverWap)
+                    const normalizedDramas = rawList.map(drama => {
                         return {
-                            bookId: drama.id || drama.bookId,
-                            bookName: drama.title || drama.bookName,
-                            coverWap: drama.thumbnail || drama.coverWap,
-                            chapterCount: drama.episode ? drama.episode.replace(/\D/g, '') : (drama.chapterCount || '0'),
-                            playCount: drama.views || 'Unknown', // Trending doesn't have views, use placeholder or omit
-                            tags: drama.tag ? [drama.tag] : (drama.tags || [])
+                            bookId: drama.bookId || drama.id,
+                            bookName: drama.bookName || drama.title,
+                            // Use 'cover' as per new API, fallback to 'coverWap' or 'thumbnail'
+                            coverWap: drama.cover || drama.coverWap || drama.thumbnail,
+                            chapterCount: drama.chapterCount || (drama.episode ? drama.episode.replace(/\D/g, '') : '0'),
+                            playCount: drama.playCount || drama.views || 'Unknown',
+                            tags: drama.tags || (drama.tag ? [drama.tag] : []),
+                            // Pass corner info if available
+                            corner: drama.corner
                         };
                     });
 

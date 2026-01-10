@@ -7,8 +7,12 @@ const AdminLogin = ({ onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const MY_BACKEND_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:8000/api'
+    const isLocal = window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.');
+
+    const MY_BACKEND_URL = isLocal
+        ? `http://${window.location.hostname}:8000/api`
         : 'https://be-drama-box-production.up.railway.app/api';
 
     const handleSubmit = async (e) => {

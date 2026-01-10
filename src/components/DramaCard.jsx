@@ -28,8 +28,9 @@ const DramaCard = ({ drama, onClick, isLoggedIn }) => {
             if (initialEpisodes === "0" && dramaId) {
                 try {
                     const res = await fetchDramaDetail(dramaId);
-                    if (ismounted && res.success && res.data && res.data.dramaInfo) {
-                        const realCount = res.data.dramaInfo.chapterCount || res.data.chapters?.length || 0;
+                    if (ismounted && res.success && res.data) {
+                        const info = res.data.detail || res.data;
+                        const realCount = info.chapterCount || info.episodeCount || (res.data.chapterList && res.data.chapterList.length) || 0;
                         if (realCount > 0) {
                             setDisplayEpisodes(realCount.toString());
                         }

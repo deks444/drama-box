@@ -17,15 +17,26 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                 const detailRes = await fetchDramaDetail(dramaId);
 
                 if (detailRes.success && detailRes.data) {
-                    setDetail(detailRes.data.dramaInfo);
+                    const info = detailRes.data.detail || detailRes.data;
+                    setDetail({
+                        bookName: info.bookName,
+                        cover: info.cover,
+                        introduction: info.introduction,
+                        chapterCount: info.episodeCount || info.chapterCount,
+                        viewCount: info.playCount,
+                        followCount: '0',
+                        tags: info.tags || [],
+                        performerList: []
+                    });
 
                     let allChapters = [];
-                    if (detailRes.data.chapters && Array.isArray(detailRes.data.chapters)) {
-                        allChapters = detailRes.data.chapters.map(c => ({
-                            chapterId: c.id,
-                            chapterIndex: c.index,
-                            chapterName: `EP ${c.index + 1}`,
-                            chapterImg: c.cover
+                    const rawChapters = detailRes.data.chapterList || detailRes.data.chapters || [];
+                    if (Array.isArray(rawChapters)) {
+                        allChapters = rawChapters.map(c => ({
+                            chapterId: c.chapterId,
+                            chapterIndex: c.chapterIndex,
+                            chapterName: c.chapterName || `EP ${c.chapterIndex + 1}`,
+                            chapterImg: info.cover
                         }));
                     }
 
@@ -206,63 +217,16 @@ const DramaDetail = ({ dramaId, onBack, onWatch, user, onLogin, onMembership }) 
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
                         {chapters.map((chapter) => (
-                            <div
+                            <button
                                 key={chapter.chapterId}
                                 onClick={() => onWatch && onWatch(dramaId, chapter.chapterIndex + 1, detail?.chapterCount || chapters.length)}
-                                className="group relative bg-slate-800/50 hover:bg-slate-700/50 rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/50 transition-all hover:scale-105"
+                                className="group relative py-3 px-2 bg-slate-800/50 hover:bg-indigo-600 rounded-xl text-sm font-bold text-slate-300 hover:text-white border border-white/5 hover:border-indigo-400/50 transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-1 shadow-lg"
                             >
-                                <div className="aspect-video relative overflow-hidden bg-slate-900">
-                                    {chapter.chapterImg ? (
-                                        <img
-                                            src={chapter.chapterImg}
-                                            alt={chapter.chapterName}
-                                            className="w-full h-full object-cover group-hover:brightness-110 transition-all"
-                                            loading="lazy"
-                                        />
-                                    ) : loading ? (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-500 animate-pulse bg-slate-800/20">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                                Loading stream...
-                                            </div>
-                                        </div>
-                                    ) : error ? (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-slate-900 animate-fade-in">
-                                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-[0_0_30px_-10px_rgba(239,68,68,0.5)]">
-                                                <Clock className="text-red-400" size={32} />
-                                            </div>
-                                            <h3 className="text-xl font-bold mb-2 text-white">Kesalahan pada server</h3>
-                                            <p className="text-slate-400 text-sm max-w-xs mb-6">
-                                                Mohon hubungi admin. Gagal memuat video saat ini.
-                                            </p>
-                                            <button
-                                                onClick={() => window.location.reload()}
-                                                className="bg-white text-slate-900 px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
-                                            >
-                                                Coba Lagi
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-slate-900"></div>
-                                            <Play size={24} className="text-slate-600 relative z-10" />
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                        <Play size={32} className="text-white fill-white" />
-                                    </div>
-                                    <div className="absolute top-2 right-2 bg-black/60 px-2 py-0.5 rounded text-xs font-medium backdrop-blur-sm z-20 border border-white/10">
-                                        {chapter.chapterName}
-                                    </div>
-                                </div>
-                                <div className="p-3">
-                                    <h4 className="font-medium text-sm truncate text-slate-200 group-hover:text-indigo-300 transition-colors">
-                                        {chapter.chapterName}
-                                    </h4>
-                                </div>
-                            </div>
+                                <span className="text-[10px] opacity-50 font-medium group-hover:text-indigo-200 uppercase">Episode</span>
+                                <span>{chapter.chapterIndex + 1}</span>
+                            </button>
                         ))}
                     </div>
                 )}

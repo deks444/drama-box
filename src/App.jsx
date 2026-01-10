@@ -67,28 +67,27 @@ function App() {
       }
 
       // Handle various potential API response structures
-      if (data && data.data) {
-        if (Array.isArray(data.data.book)) {
-          setDramas(data.data.book);
+      if (data && data.success && data.data) {
+        const dramaList = data.data.list || data.data.book || data.data.bookList || (Array.isArray(data.data) ? data.data : []);
+        setDramas(dramaList);
+
+        // Pagination handling
+        if (data.data.total && data.data.pageSize) {
+          const calculatedTotalPages = Math.ceil(data.data.total / data.data.pageSize);
+          setTotalPages(calculatedTotalPages);
+          setHasMore(data.data.pageNo < calculatedTotalPages);
+        } else if (data.data.isMore !== undefined) {
           setHasMore(data.data.isMore);
-        } else if (Array.isArray(data.data.bookList)) {
-          setDramas(data.data.bookList);
-          // For categories, pages and currentPage are provided
-          setHasMore(data.data.currentPage < data.data.pages);
-        } else if (Array.isArray(data.data)) {
-          setDramas(data.data);
-          if (data.total_page && data.page) {
-            setHasMore(data.page < data.total_page);
-            setTotalPages(data.total_page);
+          // If totalPages is not provided, we can estimate or use a high number if hasMore is true
+          if (data.data.isMore && totalPages <= page) {
+            setTotalPages(page + 1);
           }
+        } else {
+          setHasMore(dramaList.length === 10);
         }
       } else if (Array.isArray(data)) {
         setDramas(data);
         setHasMore(data.length === 10);
-      } else if (data && Array.isArray(data.results)) {
-        setDramas(data.results);
-      } else if (data && Array.isArray(data.posts)) {
-        setDramas(data.posts);
       } else {
         console.warn("Unknown API structure", data);
         setDramas([]);

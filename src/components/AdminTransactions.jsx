@@ -10,7 +10,7 @@ const AdminTransactions = () => {
     const [filterMonth, setFilterMonth] = useState('');
 
     const MY_BACKEND_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:8000/api'
+        ? 'http://localhost:8001/api'
         : 'https://be-drama-box-production.up.railway.app/api';
 
     useEffect(() => {

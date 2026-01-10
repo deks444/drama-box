@@ -18,7 +18,7 @@ const AdminPanel = ({ onLogout }) => {
     });
 
     const MY_BACKEND_URL = window.location.hostname === 'localhost'
-        ? 'http://localhost:8000/api'
+        ? 'http://localhost:8001/api'
         : 'https://be-drama-box-production.up.railway.app/api';
 
     useEffect(() => {
@@ -254,8 +254,8 @@ const AdminPanel = ({ onLogout }) => {
                         <button
                             onClick={() => { setActiveView('dashboard'); setSidebarOpen(false); }}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeView === 'dashboard'
-                                    ? 'bg-purple-600 shadow-lg shadow-purple-900/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-purple-600 shadow-lg shadow-purple-900/20'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <LayoutDashboard size={20} />
@@ -264,8 +264,8 @@ const AdminPanel = ({ onLogout }) => {
                         <button
                             onClick={() => { setActiveView('transactions'); setSidebarOpen(false); }}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeView === 'transactions'
-                                    ? 'bg-purple-600 shadow-lg shadow-purple-900/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                ? 'bg-purple-600 shadow-lg shadow-purple-900/20'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <CreditCard size={20} />

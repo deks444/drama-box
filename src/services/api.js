@@ -2,10 +2,18 @@
 const API_BASE_URL = '/api';
 
 // 2. URL untuk Backend Laravel Anda (Auth & Pembayaran)
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isLocal = window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.startsWith('192.168.') ||
+    window.location.hostname.startsWith('10.') ||
+    window.location.hostname.startsWith('172.');
+
 const MY_BACKEND_URL = isLocal
-    ? 'http://localhost:8000/api'
+    ? `http://${window.location.hostname}:8000/api` // Using 8000 as per .env
     : 'https://be-drama-box-production.up.railway.app/api';
+
+// Optional: Fallback to 8001 if someone explicitly uses it, but 8000 is default
+// For now, let's just use 8000 to match Laravel serve default and .env
 
 const handleResponse = async (response) => {
     console.log(`[API Debug] Status: ${response.status} for ${response.url}`);
@@ -26,13 +34,11 @@ const handleResponse = async (response) => {
     return data;
 };
 
+const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY || '39b9240dff5068aa756303fe0c7b32aeb2c4ecf0d762886c0b1692768cfd3a92';
+
 export const fetchLatestDramas = async (page = 1, size = 10) => {
     try {
-        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
-        // Debugging: Ensure key is loaded (restart npm run dev if you just added it)
-        if (!apiKey) console.warn("VITE_STREAM_API_KEY is missing! Please restart dev server.");
-
-        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${page}&lang=id`);
+        const response = await fetch(`/stream-api/api-dramabox/new.php?page=${page}&lang=in&pageSize=${size}&api_key=${STREAM_API_KEY}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -43,10 +49,8 @@ export const fetchLatestDramas = async (page = 1, size = 10) => {
 
 export const searchDramas = async (keyword, page = 1) => {
     try {
-        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
-        // Use encodingURI to safely encode the keyword/query
         const encodedKeyword = encodeURIComponent(keyword);
-        const response = await fetch(`/stream-api/api-dramabox/cari.php?q=${encodedKeyword}&lang=id&page=${page}`);
+        const response = await fetch(`/stream-api/api-dramabox/search.php?search=${encodedKeyword}&page=${page}&lang=in&api_key=${STREAM_API_KEY}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -57,7 +61,7 @@ export const searchDramas = async (keyword, page = 1) => {
 
 export const fetchDramaDetail = async (bookId) => {
     try {
-        const response = await fetch(`/stream-api/api-dramabox/drama.php?bookId=${bookId}&lang=id`);
+        const response = await fetch(`/stream-api/api-dramabox/drama.php?id=${bookId}&lang=in&api_key=${STREAM_API_KEY}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -68,12 +72,11 @@ export const fetchDramaDetail = async (bookId) => {
 
 export const fetchDramaChapters = async (bookId) => {
     try {
-        // Reuse fetchDramaDetail as it contains chapters now
         const data = await fetchDramaDetail(bookId);
-        if (data.success && data.data && data.data.chapters) {
+        if (data.success && data.data) {
             return {
                 message: "Success",
-                data: data.data.chapters
+                data: data.data.chapterList || data.data.chapters || []
             };
         }
         return { message: "No chapters found", data: [] };
@@ -85,28 +88,28 @@ export const fetchDramaChapters = async (bookId) => {
 
 export const fetchDramaStream = async (bookId, episode) => {
     try {
-        // Reuse fetchDramaDetail as it contains stream URLs now
-        const detailRes = await fetchDramaDetail(bookId);
+        // Use watch.php instead of reusing drama.php
+        const index = parseInt(episode) - 1;
+        const response = await fetch(`/stream-api/api-dramabox/watch.php?id=${bookId}&index=${index}&lang=in&source=search_result&api_key=${STREAM_API_KEY}`);
 
-        if (detailRes.success && detailRes.data && detailRes.data.chapters) {
-            // Find chapter by index (episode is 1-based, index is 0-based)
-            const chapter = detailRes.data.chapters.find(c => c.index === parseInt(episode) - 1);
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        const res = await response.json();
 
-            if (chapter) {
-                return {
-                    status: 'success',
-                    data: {
-                        chapter: {
-                            video: {
-                                mp4: chapter.mp4
-                            },
-                            cover: chapter.cover,
-                            chapterName: chapter.name || `Episode ${episode}`
+        if (res.success && res.data) {
+            return {
+                status: 'success',
+                data: {
+                    chapter: {
+                        video: {
+                            mp4: res.data.videoUrl || (res.data.qualities && res.data.qualities[0]?.videoPath)
                         },
-                        allEps: detailRes.data.dramaInfo?.chapterCount || detailRes.data.chapters.length
-                    }
-                };
-            }
+                        cover: res.data.cover,
+                        chapterName: `Episode ${episode}`
+                    },
+                    // We might need to fetch detail separately to get total episodes if watch.php doesn't provide it
+                    allEps: res.data.chapterCount || null
+                }
+            };
         }
         throw new Error("Episode stream not found");
     } catch (error) {
@@ -117,6 +120,7 @@ export const fetchDramaStream = async (bookId, episode) => {
 
 export const fetchDramaDownloadChapters = async (bookId) => {
     try {
+        // Keeping this as is, it seems to be using a different proxy/backend
         const response = await fetch(`${API_BASE_URL}/download/${bookId}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
@@ -126,12 +130,9 @@ export const fetchDramaDownloadChapters = async (bookId) => {
     }
 };
 
-export const fetchRecommendations = async () => {
+export const fetchRecommendations = async (page = 1) => {
     try {
-        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
-        // Random page for recommendations to give variety
-        const randomPage = Math.floor(Math.random() * 50) + 1;
-        const response = await fetch(`/stream-api/api-dramabox/index.php?page=${randomPage}&lang=id`);
+        const response = await fetch(`/stream-api/api-dramabox/foryou.php?page=${page}&lang=in&api_key=${STREAM_API_KEY}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -140,10 +141,9 @@ export const fetchRecommendations = async () => {
     }
 };
 
-export const fetchTrendingDramas = async () => {
+export const fetchTrendingDramas = async (page = 1) => {
     try {
-        const apiKey = import.meta.env.VITE_STREAM_API_KEY;
-        const response = await fetch(`/stream-api/api-dramabox/top.php?lang=id`);
+        const response = await fetch(`/stream-api/api-dramabox/rank.php?page=${page}&lang=in&api_key=${STREAM_API_KEY}`);
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         return await response.json();
     } catch (error) {
@@ -154,8 +154,10 @@ export const fetchTrendingDramas = async () => {
 
 
 
+
 export const login = async (email, password) => {
     try {
+        console.log(`[Auth] Attempting login to: ${MY_BACKEND_URL}/login`);
         const response = await fetch(`${MY_BACKEND_URL}/login`, {
             method: 'POST',
             headers: {
@@ -164,6 +166,12 @@ export const login = async (email, password) => {
             },
             body: JSON.stringify({ email, password })
         });
+
+        if (response.status === 404) {
+            console.error("[Auth] Login route not found! Check if backend is running and port is correct.");
+            throw new Error("Route login tidak ditemukan di backend.");
+        }
+
         return await response.json();
     } catch (error) {
         console.error("Login failed:", error);
