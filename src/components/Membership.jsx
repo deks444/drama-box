@@ -154,13 +154,16 @@ const Membership = ({ onSelectPlan }) => {
                             </div>
 
                             <button
-                                onClick={() => onSelectPlan && onSelectPlan(plan)}
-                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.popular
+                                onClick={() => plan.id !== 'permanent' && onSelectPlan && onSelectPlan(plan)}
+                                disabled={plan.id === 'permanent'}
+                                className={`w-full py-4 rounded-xl font-bold transition-all ${plan.id === 'permanent'
+                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5 opacity-60'
+                                    : plan.popular
                                         ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30'
                                         : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                                     }`}
                             >
-                                Pilih Paket
+                                {plan.id === 'permanent' ? 'Coming Soon' : 'Pilih Paket'}
                             </button>
                         </div>
                     ))}
